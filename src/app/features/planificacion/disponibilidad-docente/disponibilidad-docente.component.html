@@ -1,0 +1,231 @@
+@let estado = vista();
+@let periodo = periodoActual();
+@let docente = docenteActual();
+
+<!-- Colores: tokens de src/styles.css (ver TAILWIND-Y-COLORES.md) -->
+<div class="space-y-4">
+  <!-- EDITAR (C3-23): reemplazar por app-encabezado-pagina cuando G3 lo publique -->
+  <header class="space-y-1">
+    <h1 class="text-xl font-semibold text-primary-dark">Disponibilidad docente</h1>
+    <p class="text-sm text-text-secondary">
+      Marca las franjas en que el docente está disponible en el período. La asignación de
+      docentes solo sugiere docentes con disponibilidad registrada.
+    </p>
+  </header>
+
+  <!-- Filtros: período y docente -->
+  <section class="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-filter p-4">
+    <!-- EDITAR (C1-28): reemplazar por app-selector-periodo cuando G1 lo publique -->
+    <div>
+      <label class="block text-xs font-medium text-primary-dark" for="periodo">Período</label>
+      <select
+        id="periodo"
+        class="mt-1 rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-primary-dark focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        [disabled]="guardando()"
+        (change)="cambiarPeriodo($any($event.target).value)"
+      >
+        @for (p of periodos(); track p.id) {
+          <option [value]="p.id" [selected]="p.id === periodo?.id">
+            {{ p.nombre }} ({{ p.tipo === 'ORDINARIO' ? 'ordinario' : 'extraordinario' }})
+          </option>
+        }
+      </select>
+    </div>
+
+    <!-- EDITAR (C1-43): reemplazar por app-selector-docente cuando G1 lo publique -->
+    <div>
+      <label class="block text-xs font-medium text-primary-dark" for="docente">Docente</label>
+      <select
+        id="docente"
+        class="mt-1 rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-primary-dark focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        [disabled]="guardando()"
+        (change)="cambiarDocente($any($event.target).value)"
+      >
+        @for (d of docentes(); track d.id) {
+          <option [value]="d.id" [selected]="d.id === docente?.id">{{ d.nombres }}</option>
+        }
+      </select>
+    </div>
+
+    @if (periodoParaCopiar(); as anterior) {
+      <button
+        type="button"
+        class="rounded-md border border-border bg-surface px-4 py-2 text-sm font-medium text-primary hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+        [disabled]="guardando() || estado.tipo !== 'listo'"
+        (click)="copiarPeriodoAnterior()"
+      >
+        Copiar de {{ anterior.nombre }}
+      </button>
+    }
+  </section>
+
+  @if (aviso(); as mensaje) {
+    <p role="status" class="rounded-lg border border-border bg-muted px-4 py-3 text-sm text-primary-dark">
+      {{ mensaje }}
+    </p>
+  }
+
+  @if (errorAccion(); as mensaje) {
+    <p role="alert" class="rounded-lg border border-accent/40 bg-muted px-4 py-3 text-sm text-primary-dark">
+      {{ mensaje }}
+    </p>
+  }
+
+  <section
+    class="space-y-4 rounded-xl border border-border bg-surface p-4"
+    aria-label="Matriz de disponibilidad"
+    [attr.aria-busy]="estado.tipo === 'cargando'"
+  >
+    @switch (estado.tipo) {
+      @case ('cargando') {
+        <app-spinner-carga tipo="esqueleto" [filas]="6" mensaje="Cargando franjas del período…" />
+      }
+      @case ('error') {
+        <div class="space-y-3 rounded-lg border border-border bg-muted p-4">
+          <p role="alert" class="text-sm text-primary-dark">
+            No se pudo cargar la disponibilidad de este docente en este período.
+          </p>
+          <button
+            type="button"
+            class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            (click)="reintentar()"
+          >
+            Reintentar
+          </button>
+        </div>
+      }
+      @case ('listo') {
+        @if (filas().length === 0) {
+          <app-estado-vacio
+            icono="🗓️"
+            mensaje="Este tipo de período todavía no tiene franjas horarias registradas."
+          />
+        } @else {
+          <header class="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 class="text-base font-semibold text-primary-dark">
+              {{ estado.datos.docente.nombres }} · {{ estado.datos.periodo.nombre }}
+            </h2>
+            <p role="status" class="text-sm text-text-secondary">
+              <span class="font-medium text-brand">{{ totalMarcadas() }} franjas</span>
+              · {{ horasMarcadas() }} h disponibles de una carga máxima de
+              {{ estado.datos.docente.cargaMaximaHoras }} h
+            </p>
+          </header>
+
+          @if (noAlcanzaCarga()) {
+            <p
+              role="note"
+              class="rounded-lg border border-accent-gold/40 bg-accent-gold/10 px-4 py-3 text-sm text-primary-dark"
+            >
+              Las horas marcadas no alcanzan su carga máxima: con esta disponibilidad no se le
+              podrán asignar todos sus paralelos.
+            </p>
+          }
+
+          <!-- EDITAR (C3-03): reemplazar por app-matriz-franjas cuando G3 lo publique.
+               Es una matriz de casillas día × bloque; cada casilla es una franja del catálogo. -->
+          <div class="overflow-x-auto">
+            <table class="w-full border-collapse text-center text-sm">
+              <caption class="sr-only">
+                Franjas disponibles de {{ estado.datos.docente.nombres }} en
+                {{ estado.datos.periodo.nombre }}: marca las casillas de los días y horas en que
+                puede dictar
+              </caption>
+              <thead class="bg-table-header text-brand">
+                <tr>
+                  <th scope="col" class="px-3 py-2 text-left font-semibold">Hora</th>
+                  @for (d of dias(); track d.dia) {
+                    <th scope="col" class="px-2 py-2 font-semibold">
+                      <button
+                        type="button"
+                        class="rounded px-2 py-1 hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                        [attr.aria-pressed]="diaCompleto(d.dia)"
+                        [title]="'Marcar o desmarcar todo el ' + d.etiqueta"
+                        (click)="alternarDia(d.dia)"
+                      >
+                        <span class="sm:hidden">{{ d.corta }}</span>
+                        <span class="hidden sm:inline">{{ d.etiqueta }}</span>
+                      </button>
+                    </th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (fila of filas(); track fila.horaInicio) {
+                  <tr class="border-b border-border">
+                    <th scope="row" class="whitespace-nowrap px-3 py-2 text-left font-medium text-primary-dark">
+                      {{ fila.etiqueta }}
+                    </th>
+                    @for (celda of fila.celdas; track celda.dia) {
+                      <td class="px-2 py-2">
+                        @if (celda.franja; as franja) {
+                          <label
+                            class="flex cursor-pointer items-center justify-center rounded-md border px-2 py-2 transition"
+                            [class]="
+                              estaMarcada(franja)
+                                ? 'border-primary bg-primary text-white'
+                                : 'border-border bg-background text-text-secondary hover:border-accent/40 hover:bg-muted'
+                            "
+                          >
+                            <input
+                              type="checkbox"
+                              class="sr-only"
+                              [checked]="estaMarcada(franja)"
+                              [disabled]="guardando()"
+                              (change)="alternarFranja(franja)"
+                            />
+                            <span class="sr-only">
+                              {{ celda.etiquetaDia }} {{ fila.etiqueta }}
+                            </span>
+                            <span aria-hidden="true" class="text-xs font-semibold">
+                              {{ estaMarcada(franja) ? '✓' : '·' }}
+                            </span>
+                          </label>
+                        } @else {
+                          <span class="block rounded-md bg-muted/40 px-2 py-2 text-xs text-text-secondary">
+                            <span aria-hidden="true">—</span>
+                            <span class="sr-only">Sin franja</span>
+                          </span>
+                        }
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <footer class="flex flex-wrap items-center justify-end gap-2 border-t border-border pt-3">
+            @if (hayCambios()) {
+              <p role="status" class="mr-auto text-sm text-text-secondary">Hay cambios sin guardar.</p>
+            }
+            <button
+              type="button"
+              class="rounded-md border border-border px-4 py-2 text-sm font-medium text-primary hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+              [disabled]="guardando() || totalMarcadas() === 0"
+              (click)="limpiar()"
+            >
+              Limpiar todo
+            </button>
+            <button
+              type="button"
+              class="rounded-md border border-border px-4 py-2 text-sm font-medium text-primary hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+              [disabled]="guardando() || !hayCambios()"
+              (click)="descartar()"
+            >
+              Descartar cambios
+            </button>
+            <button
+              type="button"
+              class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+              [disabled]="guardando() || !hayCambios()"
+              (click)="guardar()"
+            >
+              {{ guardando() ? 'Guardando…' : 'Guardar disponibilidad' }}
+            </button>
+          </footer>
+        }
+      }
+    }
+  </section>
+</div>

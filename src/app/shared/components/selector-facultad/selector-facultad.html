@@ -1,0 +1,28 @@
+<div class="flex flex-col gap-1">
+  <label [for]="idCampo" class="text-sm font-medium text-text-secondary">Facultad</label>
+
+  <select
+    #sel
+    [id]="idCampo"
+    [disabled]="cargando() || error()"
+    (change)="alCambiar(sel.value)"
+    class="rounded-md border border-border bg-surface px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-primary disabled:bg-muted disabled:text-text-secondary"
+  >
+    @if (cargando()) {
+      <option value="">Cargando facultades…</option>
+    } @else if (permitirTodas()) {
+      <option value="" [selected]="valor() === ''">Todas</option>
+    } @else {
+      <option value="" disabled [selected]="valor() === ''">Selecciona una facultad</option>
+    }
+    @for (f of facultades(); track f.id) {
+      <option [value]="f.id" [selected]="valor() === '' + f.id">{{ f.codigo }} · {{ f.nombre }}</option>
+    }
+  </select>
+
+  @if (error()) {
+    <p role="alert" class="text-xs text-accent">No se pudieron cargar las facultades.</p>
+  } @else if (!cargando() && facultades().length === 0) {
+    <p class="text-xs text-text-secondary">No hay facultades activas.</p>
+  }
+</div>

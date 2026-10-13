@@ -1,0 +1,25 @@
+<div class="max-w-4xl mx-auto p-6 bg-surface rounded-xl shadow-md border border-border">
+  <h2 class="text-2xl font-bold text-primary mb-6">Listado de Mallas Curriculares</h2>
+  <div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse text-sm">
+      <thead>
+        <tr class="border-b border-border text-gray-600">
+          <th class="py-3 px-4">Código</th>
+          <th class="py-3 px-4">Carrera</th>
+          <th class="py-3 px-4">Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (m of mallas; track m.id) {
+          <tr class="border-b border-border hover:bg-gray-50 transition-colors">
+            <td class="py-3 px-4 font-semibold">{{ m.codigo }}</td>
+            <td class="py-3 px-4">{{ m.carrera }}</td>
+            <td class="py-3 px-4">
+              <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-green-50 text-green-700">{{ m.estado }}</span>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

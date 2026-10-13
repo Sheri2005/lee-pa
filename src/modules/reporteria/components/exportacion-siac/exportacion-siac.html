@@ -1,0 +1,195 @@
+<section class="space-y-6">
+  <header>
+    <h1 class="text-2xl font-bold text-primary-dark">
+      Exportación al SIAC 1.0
+    </h1>
+
+    <p class="mt-1 text-sm text-text-secondary">
+      Valida la planificación y genera los archivos JSON y CSV para SIAC 1.0.
+    </p>
+  </header>
+
+  <section class="rounded-xl border border-border bg-surface p-5 shadow-sm">
+    <label
+      for="planificacion"
+      class="mb-2 block text-sm font-medium text-primary-dark"
+    >
+      Planificación
+    </label>
+
+    <select
+      id="planificacion"
+      class="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-primary-dark outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+      [value]="planificacionId()"
+      (change)="seleccionarPlanificacion($event)"
+    >
+      @for (planificacion of planificaciones; track planificacion.id) {
+        <option [value]="planificacion.id">
+          {{ planificacion.nombre }} · {{ planificacion.periodo }}
+        </option>
+      }
+    </select>
+  </section>
+
+  @if (planificacionSeleccionada(); as planificacion) {
+    <section
+      class="grid gap-4 rounded-xl border border-border bg-surface p-5 shadow-sm sm:grid-cols-2 lg:grid-cols-4"
+    >
+      <div>
+        <p class="text-xs font-medium uppercase tracking-wide text-text-secondary">
+          Carrera
+        </p>
+        <p class="mt-1 font-medium text-primary-dark">
+          {{ planificacion.carrera }}
+        </p>
+      </div>
+
+      <div>
+        <p class="text-xs font-medium uppercase tracking-wide text-text-secondary">
+          Período
+        </p>
+        <p class="mt-1 font-medium text-primary-dark">
+          {{ planificacion.periodo }}
+        </p>
+      </div>
+
+      <div>
+        <p class="text-xs font-medium uppercase tracking-wide text-text-secondary">
+          Paralelos
+        </p>
+        <p class="mt-1 font-medium text-primary-dark">
+          {{ planificacion.totalParalelos }}
+        </p>
+      </div>
+
+      <div>
+        <p class="text-xs font-medium uppercase tracking-wide text-text-secondary">
+          Estado
+        </p>
+
+        <span
+          class="mt-1 inline-flex rounded-full px-3 py-1 text-xs font-semibold"
+          [class.bg-muted]="planificacion.estado === 'APROBADA'"
+          [class.text-primary]="planificacion.estado === 'APROBADA'"
+          [class.bg-header]="planificacion.estado !== 'APROBADA'"
+          [class.text-accent]="planificacion.estado !== 'APROBADA'"
+        >
+          {{ planificacion.estado }}
+        </span>
+      </div>
+    </section>
+
+    @if (planificacion.estado !== 'APROBADA') {
+      <section
+        class="rounded-xl border border-accent bg-header p-5"
+        role="alert"
+      >
+        <h2 class="font-semibold text-accent">
+          La planificación todavía no puede exportarse
+        </h2>
+
+        <p class="mt-1 text-sm text-text-secondary">
+          Solo las planificaciones aprobadas pueden generar archivos para SIAC 1.0.
+        </p>
+      </section>
+    } @else {
+      @switch (estadoValidacion()) {
+        @case ('cargando') {
+          <section
+            class="rounded-xl border border-border bg-surface p-5"
+            role="status"
+          >
+            <p class="text-sm text-text-secondary">
+              Validando códigos SIAC...
+            </p>
+          </section>
+        }
+
+        @case ('error') {
+          <section
+            class="rounded-xl border border-accent bg-header p-5"
+            role="alert"
+          >
+            <p class="font-medium text-accent">
+              No fue posible validar los códigos SIAC.
+            </p>
+          </section>
+        }
+
+        @case ('listo') {
+          @if (registrosPendientes().length > 0) {
+            <section
+              class="rounded-xl border border-accent bg-header p-5"
+              role="alert"
+            >
+              <h2 class="font-semibold text-accent">
+                Exportación bloqueada
+              </h2>
+
+              <p class="mt-1 text-sm text-text-secondary">
+                Existen {{ registrosPendientes().length }}
+                registros sin código SIAC 1.0. Complétalos antes de continuar.
+              </p>
+            </section>
+
+            <app-registros-sin-siac
+              [planificacionId]="planificacion.id"
+              (irARegistro)="irARegistro($event)"
+            />
+
+            @if (registroSeleccionado()) {
+              <p
+                class="rounded-lg border border-border bg-muted px-4 py-3 text-sm text-text-secondary"
+              >
+                Navegación pendiente de integración:
+                <strong class="text-primary-dark">
+                  {{ registroSeleccionado() }}
+                </strong>
+              </p>
+            }
+          } @else {
+            <section
+              class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-surface p-5 shadow-sm"
+            >
+              <div>
+                <h2 class="font-semibold text-primary-dark">
+                  Validación completada
+                </h2>
+
+                <p class="mt-1 text-sm text-text-secondary">
+                  La planificación está aprobada y todos los registros cuentan con código SIAC.
+                </p>
+              </div>
+
+              @if (!mostrarVistaPrevia()) {
+                <button
+                  type="button"
+                  class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  (click)="generarVistaPrevia()"
+                >
+                  Generar vista previa
+                </button>
+              } @else {
+                <button
+                  type="button"
+                  class="rounded-md border border-border bg-surface px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-muted"
+                  (click)="ocultarVistaPrevia()"
+                >
+                  Ocultar vista previa
+                </button>
+              }
+            </section>
+
+            @if (mostrarVistaPrevia()) {
+              <app-vista-previa-exportacion
+                [datosJson]="planificacion.datosJson"
+                [contenidoCsv]="planificacion.contenidoCsv"
+                [nombreArchivo]="'planificacion-' + planificacion.id"
+              />
+            }
+          }
+        }
+      }
+    }
+  }
+</section>

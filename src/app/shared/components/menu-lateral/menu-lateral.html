@@ -1,0 +1,48 @@
+<nav
+  aria-label="Navegación principal"
+  class="flex h-full flex-col gap-4 overflow-y-auto border-r border-border bg-surface py-4 text-primary-dark transition-[width] duration-200"
+  [class.w-64]="!colapsado()"
+  [class.w-16]="colapsado()"
+>
+  @for (grupo of gruposVisibles(); track grupo.id) {
+    <section [attr.aria-labelledby]="'menu-grupo-' + grupo.id">
+      <h2
+        [id]="'menu-grupo-' + grupo.id"
+        class="px-4 pb-1 text-xs font-semibold uppercase tracking-wider text-text-secondary"
+        [class.sr-only]="colapsado()"
+      >
+        {{ grupo.etiqueta }}
+      </h2>
+
+      <ul class="flex flex-col gap-0.5 px-2">
+        @for (item of grupo.items; track item.ruta) {
+          <li>
+            <a
+              [routerLink]="item.ruta"
+              routerLinkActive="bg-primary text-white hover:bg-primary"
+              ariaCurrentWhenActive="page"
+              [attr.title]="colapsado() ? item.etiqueta : null"
+              (click)="alSeleccionar(item.ruta)"
+              class="flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary"
+              [class.justify-center]="colapsado()"
+            >
+              <svg
+                class="size-5 shrink-0"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path [attr.d]="trazoIcono(item.icono)" />
+              </svg>
+              <span [class.sr-only]="colapsado()">{{ item.etiqueta }}</span>
+            </a>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+</nav>

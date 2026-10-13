@@ -1,0 +1,18 @@
+    <div role="status" aria-live="polite">
+      @if (tipo() === 'spinner') {
+        <div class="flex items-center justify-center gap-3 py-8 text-text-secondary">
+          <span
+            class="size-6 animate-spin rounded-full border-2 border-border border-t-primary"
+            aria-hidden="true"
+          ></span>
+          <span class="text-sm">{{ mensaje() }}</span>
+        </div>
+      } @else {
+        <div class="grid gap-3 py-2" aria-hidden="true">
+          @for (fila of listaFilas(); track fila) {
+            <div class="h-4 animate-pulse rounded bg-border" [class]="$last ? 'w-2/3' : 'w-full'"></div>
+          }
+        </div>
+        <span class="sr-only">{{ mensaje() }}</span>
+      }
+    </div>

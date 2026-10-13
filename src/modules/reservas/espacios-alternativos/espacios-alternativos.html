@@ -1,0 +1,194 @@
+<section [attr.aria-labelledby]="id + '-titulo'" [attr.aria-busy]="estado().tipo === 'cargando'">
+  <header class="mb-5">
+    <h2
+      [id]="id + '-titulo'"
+      class="flex items-center gap-2.5 text-xl font-semibold tracking-tight"
+    >
+      Espacios alternativos
+      @if (estado().tipo === 'listo') {
+        <span
+          class="rounded-md bg-muted px-2 py-0.5 text-xs font-semibold text-primary tabular-nums"
+          >{{ alternativas().length }}</span
+        >
+      }
+    </h2>
+    <p class="mt-1 text-sm text-text-secondary">
+      Opciones disponibles que cumplen la capacidad y los recursos solicitados.
+    </p>
+  </header>
+
+  @switch (estado().tipo) {
+    @case ('cargando') {
+      <p class="sr-only" role="status">Buscando espacios alternativos…</p>
+      <div class="grid gap-5 sm:grid-cols-2" aria-hidden="true">
+        @for (n of [1, 2]; track n) {
+          <div class="h-72 animate-pulse rounded-2xl border border-border bg-surface p-6">
+            <div class="h-5 w-24 rounded bg-muted"></div>
+            <div class="mt-5 h-7 w-2/3 rounded bg-muted"></div>
+            <div class="mt-4 h-16 rounded bg-muted"></div>
+          </div>
+        }
+      </div>
+    }
+    @case ('error') {
+      <div
+        class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+        role="alert"
+      >
+        No se pudieron cargar las alternativas. Inténtalo nuevamente.
+      </div>
+    }
+    @case ('listo') {
+      @if (alternativas().length === 0) {
+        <!-- TEMPORAL: reemplazar por app-estado-vacio (C2-25, G2). -->
+        <div
+          class="rounded-2xl border border-border bg-surface px-6 py-12 text-center shadow-sm"
+          role="status"
+        >
+          <div class="mx-auto grid size-12 place-items-center rounded-full bg-muted text-primary">
+            <svg
+              class="size-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="6.5" />
+              <path d="m20 20-4.2-4.2" />
+            </svg>
+          </div>
+          <p class="mt-3 font-semibold">No encontramos espacios equivalentes</p>
+          <p class="mx-auto mt-1 max-w-md text-sm text-text-secondary">
+            Prueba cambiando el horario, la capacidad o los recursos requeridos.
+          </p>
+        </div>
+      } @else {
+        <ul class="grid grid-cols-[repeat(auto-fill,minmax(min(100%,18rem),1fr))] gap-5">
+          @for (alternativa of alternativas(); track alternativa.espacio.id) {
+            <li>
+              <!-- TEMPORAL: reemplazar la tarjeta por app-tarjeta-espacio (C3-13, G3). -->
+              <article
+                class="group flex h-full flex-col rounded-2xl border border-border bg-surface p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg"
+                [attr.aria-labelledby]="id + '-espacio-' + alternativa.espacio.id"
+              >
+                <div class="flex items-center justify-between gap-3">
+                  <span
+                    class="rounded-md bg-muted px-2.5 py-1 text-xs font-semibold tracking-wider text-primary uppercase"
+                    >{{ tipoLegible(alternativa.espacio.tipo_espacio) }}</span
+                  ><span class="text-sm text-text-secondary tabular-nums">{{
+                    alternativa.espacio.codigo
+                  }}</span>
+                </div>
+                <h3
+                  [id]="id + '-espacio-' + alternativa.espacio.id"
+                  class="mt-3 text-xl font-semibold"
+                >
+                  {{ alternativa.espacio.nombre }}
+                </h3>
+                <p class="mt-1 text-sm text-text-secondary">
+                  {{ alternativa.espacio.edificio }} · {{ pisoLegible(alternativa.espacio.piso) }}
+                </p>
+                <dl class="mt-4 grid gap-2.5 text-sm">
+                  <div class="flex justify-between border-t border-border pt-3">
+                    <dt class="text-text-secondary">Capacidad</dt>
+                    <dd class="font-semibold tabular-nums">
+                      {{ alternativa.espacio.capacidad }} personas
+                    </dd>
+                  </div>
+                  <div>
+                    <dt class="text-xs font-semibold tracking-wider text-text-secondary uppercase">
+                      Recursos
+                    </dt>
+                    <dd class="mt-1">
+                      {{ recursosTexto(alternativa.espacio) || 'Sin equipamiento adicional' }}
+                    </dd>
+                  </div>
+                </dl>
+                <!-- TEMPORAL: reemplazar por app-justificacion-regla (C2-27, G2). -->
+                <div
+                  class="mt-3 flex flex-1 flex-col rounded-xl border border-accent-gold/20 bg-accent-gold/5 px-3 py-2.5 text-xs leading-relaxed"
+                >
+                  <p class="font-semibold text-accent-gold">Por qué se recomienda</p>
+                  <p class="mt-1 text-text-secondary">{{ alternativa.justificacion }}</p>
+                  <ul
+                    class="mt-auto flex flex-col items-start gap-1.5 pt-2.5"
+                    aria-label="Criterios"
+                  >
+                    <li
+                      class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-semibold"
+                      [class]="
+                        alternativa.prioridadFacultad
+                          ? 'border-primary/25 bg-surface text-primary'
+                          : 'border-border bg-surface text-text-secondary'
+                      "
+                    >
+                      <svg
+                        class="size-3.5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M3 21h18M5 21V8l7-4 7 4v13M9 21v-5h6v5" />
+                      </svg>
+                      {{
+                        alternativa.prioridadFacultad
+                          ? 'Edificio de tu facultad'
+                          : 'Fuera de tu facultad'
+                      }}
+                    </li>
+                    <li
+                      class="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2 py-0.5 font-semibold text-primary-dark"
+                    >
+                      <svg
+                        class="size-3.5 text-primary"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Z" />
+                        <circle cx="12" cy="9.5" r="2.5" />
+                      </svg>
+                      {{ CERCANIA[alternativa.cercania] }}
+                    </li>
+                  </ul>
+                </div>
+                <div class="pt-4">
+                  <button
+                    type="button"
+                    class="flex min-h-11 w-full items-center justify-center gap-2.5 rounded-lg bg-primary px-5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary active:bg-primary-dark"
+                    [attr.aria-label]="'Usar ' + alternativa.espacio.nombre"
+                    (click)="elegir.emit(alternativa.espacio)"
+                  >
+                    Usar este
+                    <svg
+                      class="size-4 transition-transform group-hover:translate-x-1"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M5 12h14M13 6l6 6-6 6" />
+                    </svg>
+                  </button>
+                </div>
+              </article>
+            </li>
+          }
+        </ul>
+      }
+    }
+  }
+</section>

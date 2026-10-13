@@ -1,0 +1,54 @@
+<header class="flex min-h-16 items-center justify-between border-b border-primary-dark bg-primary px-4 py-3">
+
+    <div class="flex items-center gap-4">
+
+        <!-- Botón que comunica al ShellLayout cuándo expandir o colapsar el menú. -->
+        <button
+        type="button"
+        (click)="toggleMenu()"
+        class="rounded-md p-2 text-surface hover:bg-accent focus-visible:outline-2 focus-visible:outline-surface"
+        aria-label="Expandir o colapsar menú lateral"
+        >
+            <svg
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+            >
+                <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 6h16M4 12h16M4 18h16"
+                />
+            </svg>
+        </button>
+
+        <div>
+            <p class="text-lg font-semibold text-surface">
+                Sistema Universitario
+            </p>
+
+            <p class="text-xs text-header">
+                Gestión Académica
+            </p>
+        </div>
+
+    </div>
+
+    <!-- Componente C1-04: menú del usuario autenticado.
+    TEMPORAL: recibe usuarioPrueba hasta integrar AuthService. -->
+    <div class="flex items-center gap-3">
+
+        <!-- Integrar aquí app-campana-notificaciones (G5). -->
+
+        <app-menu-usuario
+            [usuario]="usuarioPrueba"
+            (solicitarCambioContrasena)="solicitarCambioContrasena()"
+            (cerrarSesion)="solicitarCierreSesion()"
+        />
+
+    </div>
+
+</header>

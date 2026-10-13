@@ -1,0 +1,94 @@
+<button
+  type="button"
+  class="flex min-h-11 w-full items-center gap-2 rounded-lg border bg-surface py-2 pr-2.5 pl-3 text-left shadow-xs transition-[border-color,box-shadow] duration-200 hover:border-primary/40 focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:outline-none"
+  [class]="
+    invalido()
+      ? 'border-red-700'
+      : abierto()
+        ? 'border-primary ring-4 ring-primary/10'
+        : valor()
+          ? 'border-primary/50'
+          : 'border-border'
+  "
+  [id]="idCampo()"
+  [attr.name]="nombre() || null"
+  aria-haspopup="listbox"
+  [attr.aria-expanded]="abierto()"
+  [attr.aria-controls]="idCampo() + '-lista'"
+  [attr.aria-invalid]="invalido()"
+  (click)="alternar()"
+  (keydown)="teclaBoton($event)"
+>
+  <span
+    class="min-w-0 flex-1 truncate"
+    [class]="valor() ? 'font-medium text-primary-dark' : 'text-text-secondary'"
+    >{{ elegida()?.etiqueta ?? vacio() }}</span
+  >
+  <svg
+    class="size-4 shrink-0 text-primary transition-transform duration-200 motion-reduce:transition-none"
+    [class.rotate-180]="abierto()"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2.2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+</button>
+
+@if (abierto()) {
+  <ul
+    role="listbox"
+    [id]="idCampo() + '-lista'"
+    [attr.aria-labelledby]="idCampo()"
+    class="absolute top-full left-0 z-50 mt-2 max-h-72 w-full min-w-48 origin-top overflow-y-auto overscroll-contain rounded-xl border border-border bg-surface p-1.5 shadow-xl shadow-wine-deep/10 transition duration-200 ease-out starting:-translate-y-2 starting:scale-95 starting:opacity-0 motion-reduce:transition-none"
+    (keydown)="teclaLista($event)"
+  >
+    @for (opcion of lista(); track opcion.valor; let i = $index) {
+      <li
+        role="option"
+        class="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-sm transition-colors duration-150 outline-none"
+        [class]="
+          opcion.valor === valor()
+            ? 'bg-muted font-semibold text-primary'
+            : i === activa()
+              ? 'bg-header text-primary'
+              : 'text-primary-dark hover:bg-header hover:text-primary'
+        "
+        [attr.data-valor]="opcion.valor"
+        [attr.aria-selected]="opcion.valor === valor()"
+        [attr.tabindex]="i === activa() ? 0 : -1"
+        (click)="elegir(opcion)"
+        (keydown.enter)="elegir(opcion)"
+        (keydown.space)="$event.preventDefault(); elegir(opcion)"
+        (mouseenter)="activa.set(i)"
+      >
+        <span class="min-w-0 flex-1">
+          <span class="block truncate">{{ opcion.etiqueta }}</span>
+          @if (opcion.detalle) {
+            <span class="block truncate text-xs font-normal text-text-secondary">{{
+              opcion.detalle
+            }}</span>
+          }
+        </span>
+        @if (opcion.valor === valor()) {
+          <svg
+            class="size-4 shrink-0 text-primary"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="m5 12.5 4.5 4.5L19 7.5" />
+          </svg>
+        }
+      </li>
+    }
+  </ul>
+}

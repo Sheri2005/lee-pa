@@ -1,0 +1,329 @@
+@let estado = vista();
+
+<!-- Colores: tokens de src/styles.css (ver TAILWIND-Y-COLORES.md) -->
+<section
+  class="space-y-4 rounded-xl border border-border bg-surface p-4"
+  aria-label="Cursos sugeridos"
+  [attr.aria-busy]="estado.tipo === 'cargando'"
+>
+  <header class="flex flex-wrap items-start justify-between gap-3">
+    <div class="min-w-0">
+      <h2 class="text-lg font-semibold text-primary-dark">Cursos sugeridos</h2>
+      <p class="text-sm text-text-secondary">
+        Las reglas proponen qué cursos aperturar y con cuántos paralelos. Puedes aceptar, anular,
+        cambiar el número de paralelos o agregar un curso a mano.
+      </p>
+      @if (parametros(); as p) {
+        <p class="mt-1 text-xs text-text-secondary">
+          Cupo máximo {{ p.cupoMaximo }} · mínimo para abrir {{ p.minimoApertura }} · niveles
+          ofertados {{ p.nivelesOfertados.join(', ') }}
+        </p>
+      }
+    </div>
+
+    @if (puedeAgregarManual()) {
+      <button
+        type="button"
+        class="shrink-0 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+        [disabled]="guardando() !== null"
+        (click)="abrirFormularioManual()"
+      >
+        + Agregar curso manual
+      </button>
+    }
+  </header>
+
+  @if (!editable() && estado.tipo === 'listo') {
+    <p role="note" class="rounded-lg border border-border bg-muted px-4 py-3 text-sm text-text-secondary">
+      La planificación ya no está en borrador: la sugerencia se muestra en solo lectura.
+    </p>
+  }
+
+  @if (aviso(); as mensaje) {
+    <p role="status" class="rounded-lg border border-border bg-muted px-4 py-3 text-sm text-primary-dark">
+      {{ mensaje }}
+    </p>
+  }
+
+  @if (errorAccion(); as mensaje) {
+    <p role="alert" class="rounded-lg border border-accent/40 bg-muted px-4 py-3 text-sm text-primary-dark">
+      {{ mensaje }}
+    </p>
+  }
+
+  <!-- EDITAR (C2-09): formulario provisional; reemplazar por app-curso-manual-form -->
+  @if (formularioManualAbierto()) {
+    <form
+      class="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-header p-4"
+      (submit)="
+        $event.preventDefault();
+        agregarManual(materiaManual.value, paralelosManual.value, motivoManual.value)
+      "
+    >
+      <div>
+        <label class="block text-xs font-medium text-primary-dark" for="materia-manual">
+          Materia
+        </label>
+        <select
+          #materiaManual
+          id="materia-manual"
+          class="mt-1 rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-primary-dark focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          @for (m of agregables(); track m.id) {
+            <option [value]="m.id">{{ m.codigo }} — {{ m.nombre }}</option>
+          }
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-primary-dark" for="paralelos-manual">
+          Paralelos
+        </label>
+        <input
+          #paralelosManual
+          type="number"
+          id="paralelos-manual"
+          class="mt-1 w-24 rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-primary-dark focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          value="1"
+          min="1"
+          [max]="maximoParalelos"
+          step="1"
+          inputmode="numeric"
+        />
+      </div>
+
+      <div class="min-w-48 flex-1">
+        <label class="block text-xs font-medium text-primary-dark" for="motivo-manual">
+          Motivo
+        </label>
+        <input
+          #motivoManual
+          type="text"
+          id="motivo-manual"
+          class="mt-1 w-full rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-primary-dark focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          placeholder="Por qué se abre este curso"
+          required
+        />
+      </div>
+
+      <button
+        type="submit"
+        class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+        [disabled]="guardando() !== null"
+      >
+        {{ guardando() === 'manual' ? 'Agregando…' : 'Agregar curso' }}
+      </button>
+      <button
+        type="button"
+        class="rounded-md border border-border px-4 py-2 text-sm font-medium text-primary hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        (click)="cerrarFormularioManual()"
+      >
+        Cancelar
+      </button>
+    </form>
+  }
+
+  @switch (estado.tipo) {
+    @case ('cargando') {
+      <app-spinner-carga tipo="esqueleto" [filas]="5" mensaje="Corriendo las reglas de sugerencia…" />
+    }
+    @case ('error') {
+      <div class="space-y-3 rounded-lg border border-border bg-muted p-4">
+        <p role="alert" class="text-sm text-primary-dark">
+          No se pudo cargar la sugerencia de esta planificación. Intenta nuevamente.
+        </p>
+        <button
+          type="button"
+          class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          (click)="reintentar()"
+        >
+          Reintentar
+        </button>
+      </div>
+    }
+    @case ('listo') {
+      @if (cursos().length === 0) {
+        <app-estado-vacio
+          icono="📋"
+          mensaje="Las reglas no sugirieron ningún curso con los parámetros actuales."
+        />
+      } @else {
+        <p role="status" class="text-sm font-medium text-brand">
+          {{ cursosAceptados() }} de {{ cursos().length }} cursos aceptados ·
+          {{ paralelosTotales() }} paralelos a aperturar
+        </p>
+
+        <div class="overflow-x-auto rounded-lg border border-border">
+          <table class="w-full border-collapse text-left text-sm">
+            <caption class="sr-only">
+              Cursos que las reglas proponen aperturar, con su justificación y el número de
+              paralelos
+            </caption>
+            <thead class="bg-table-header text-brand">
+              <tr>
+                <th scope="col" class="px-4 py-2 font-semibold">Código</th>
+                <th scope="col" class="px-4 py-2 font-semibold">Materia</th>
+                <th scope="col" class="px-4 py-2 font-semibold">Nivel</th>
+                <th scope="col" class="px-4 py-2 font-semibold">Estimados</th>
+                <th scope="col" class="px-4 py-2 font-semibold">Histórica</th>
+                <th scope="col" class="px-4 py-2 font-semibold">Paralelos</th>
+                <th scope="col" class="px-4 py-2 font-semibold">Justificación</th>
+                <th scope="col" class="px-4 py-2 font-semibold">Estado</th>
+                <th scope="col" class="px-4 py-2 font-semibold">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of cursos(); track item.curso.id) {
+                <tr class="border-b border-border align-top hover:bg-muted">
+                  <td class="whitespace-nowrap px-4 py-3 font-medium text-primary-dark">
+                    {{ item.curso.materia.codigo }}
+                  </td>
+                  <td class="px-4 py-3 text-primary-dark">
+                    {{ item.curso.materia.nombre }}
+                    @if (item.curso.origen === 'MANUAL') {
+                      <span class="block text-xs text-text-secondary">
+                        Agregado a mano: {{ item.curso.motivoManual }}
+                      </span>
+                    }
+                  </td>
+                  <td class="px-4 py-3 text-text-secondary">
+                    @if (item.curso.nivel !== null) {
+                      {{ item.curso.nivel }}
+                    } @else {
+                      <span aria-hidden="true">—</span><span class="sr-only">No aplica</span>
+                    }
+                  </td>
+                  <td class="px-4 py-3 text-text-secondary">{{ item.curso.estudiantesEstimados }}</td>
+                  <td class="px-4 py-3 text-text-secondary">
+                    @if (item.curso.demandaHistorica !== null) {
+                      {{ item.curso.demandaHistorica }}
+                    } @else {
+                      <span aria-hidden="true">—</span>
+                      <span class="sr-only">Sin período anterior</span>
+                    }
+                  </td>
+                  <td class="px-4 py-3">
+                    @if (editable() && item.curso.estado !== 'ANULADO') {
+                      <label class="sr-only" [attr.for]="'paralelos-' + item.curso.id">
+                        Paralelos de {{ item.curso.materia.codigo }}
+                      </label>
+                      <input
+                        type="number"
+                        [id]="'paralelos-' + item.curso.id"
+                        class="w-20 rounded-md border border-border bg-surface px-2 py-1 text-sm text-primary-dark focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
+                        [value]="item.paralelosDecididos"
+                        min="1"
+                        [max]="maximoParalelos"
+                        step="1"
+                        inputmode="numeric"
+                        [disabled]="guardando() !== null"
+                        (change)="cambiarParalelos(item, $any($event.target).value)"
+                      />
+                    } @else {
+                      <span class="text-text-secondary">{{ item.paralelosDecididos }}</span>
+                    }
+                    @if (item.paralelosDecididos !== item.curso.paralelosSugeridos) {
+                      <span class="block text-xs text-text-secondary">
+                        sugeridos: {{ item.curso.paralelosSugeridos }}
+                      </span>
+                    }
+                  </td>
+                  <!-- C2-10: justificación de la regla en modo compacto (tooltip) -->
+                  <td class="px-4 py-3">
+                    <app-justificacion-regla [criterios]="item.curso.justificacion" compacto />
+                  </td>
+                  <!-- EDITAR (C5-08): reemplazar por app-estado-badge cuando G5 lo publique -->
+                  <td class="whitespace-nowrap px-4 py-3">
+                    <span [class]="clasesCurso[item.curso.estado]">
+                      {{ etiquetasCurso[item.curso.estado] }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3">
+                    @if (editable()) {
+                      <div class="flex flex-wrap gap-1.5">
+                        @if (item.curso.estado === 'ANULADO') {
+                          <button
+                            type="button"
+                            class="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-primary hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+                            [disabled]="guardando() !== null"
+                            (click)="reactivar(item)"
+                          >
+                            Reactivar
+                          </button>
+                        } @else {
+                          @if (item.curso.estado === 'SUGERIDO') {
+                            <button
+                              type="button"
+                              class="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+                              [disabled]="guardando() !== null"
+                              (click)="aceptar(item)"
+                            >
+                              Aceptar
+                            </button>
+                          }
+                          <button
+                            type="button"
+                            class="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-primary hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+                            [disabled]="guardando() !== null"
+                            (click)="anular(item)"
+                          >
+                            Anular
+                          </button>
+                        }
+                      </div>
+                    } @else {
+                      <span class="text-xs text-text-secondary">Sin acciones</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      <!-- Por qué las reglas dejaron materias fuera (G2-05 niveles, G2-08 compartidas) -->
+      @if (excluidas().length > 0) {
+        <details class="rounded-lg border border-border bg-background px-4 py-3">
+          <summary class="cursor-pointer text-sm font-medium text-primary-dark">
+            {{ excluidas().length }} materia(s) quedaron fuera de la sugerencia
+          </summary>
+          <ul class="mt-2 space-y-1 text-sm text-text-secondary">
+            @for (e of excluidas(); track e.codigo) {
+              <li>
+                <span class="font-medium text-primary-dark">{{ e.codigo }}</span>
+                — {{ e.nombre }}:
+                @switch (e.motivo) {
+                  @case ('NIVEL_NO_OFERTADO') {
+                    el nivel {{ e.nivel }} no se oferta en este período.
+                  }
+                  @case ('COMPARTIDA') {
+                    es compartida y la apertura {{ e.carreraResponsable }}; los cupos se piden en
+                    <em>Materias compartidas</em>.
+                  }
+                }
+              </li>
+            }
+          </ul>
+        </details>
+      }
+
+      <!-- C2-07: el detalle de qué materias entran en la planificación, a pedido -->
+      <div class="border-t border-border pt-3">
+        <button
+          type="button"
+          class="rounded-md border border-border px-4 py-2 text-sm font-medium text-primary hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          [attr.aria-expanded]="verMaterias()"
+          (click)="alternarMaterias()"
+        >
+          {{ verMaterias() ? 'Ocultar' : 'Ver' }} las materias a planificar
+        </button>
+        @if (verMaterias()) {
+          <div class="mt-3">
+            <app-materias-a-planificar [planificacionId]="planificacionId()" />
+          </div>
+        }
+      </div>
+    }
+  }
+</section>

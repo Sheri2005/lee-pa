@@ -1,0 +1,215 @@
+<section aria-labelledby="bitacora-titulo" class="mx-auto max-w-6xl px-4 py-6">
+  <!-- TEMPORAL: reemplazar por <app-encabezado-pagina> (C3-23, G3), con el enlace en su zona de acciones -->
+  <header class="flex flex-wrap items-end justify-between gap-4 border-b border-border pb-4">
+    <div>
+      <p class="text-sm text-text-secondary">Gestión / Carga masiva / Bitácora</p>
+      <h1 id="bitacora-titulo" class="text-2xl font-semibold text-primary-dark">Bitácora de importaciones</h1>
+      <p class="mt-1 text-text-secondary">Historial de las cargas masivas y sus errores.</p>
+    </div>
+    <a
+      routerLink="/gestion/carga-masiva"
+      class="rounded-md border border-primary px-4 py-2 font-medium text-primary hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+    >
+      Nueva carga
+    </a>
+  </header>
+  <!-- FIN TEMPORAL -->
+
+  <!-- TEMPORAL: reemplazar por <app-barra-filtros [filtrosActivos]="filtrosActivos()" (buscar)="buscar()" (limpiar)="limpiar()">
+       (C4-21, G4), proyectando dentro el select de entidad y el rango de fechas -->
+  <form
+    (submit)="buscar($event)"
+    aria-label="Filtros de la bitácora"
+    class="mt-4 flex flex-wrap items-end gap-4 rounded-md border border-border bg-filter p-4"
+  >
+    <div class="flex flex-col gap-1">
+      <label for="filtro-entidad" class="text-sm font-medium text-text-secondary">Entidad</label>
+      <select
+        #sel
+        id="filtro-entidad"
+        (change)="entidad.set(sel.value)"
+        class="rounded-md border border-border bg-surface px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-primary"
+      >
+        <option value="" [selected]="entidad() === ''">Todas</option>
+        @for (e of entidades(); track e) {
+          <option [value]="e" [selected]="entidad() === e">{{ e }}</option>
+        }
+      </select>
+    </div>
+
+    <!-- TEMPORAL: reemplazar por <app-selector-rango-fechas [(desde)] [(hasta)]> (C4-05, G4) -->
+    <fieldset class="flex flex-wrap items-end gap-2">
+      <legend class="sr-only">Rango de fechas</legend>
+      <div class="flex flex-col gap-1">
+        <label for="filtro-desde" class="text-sm font-medium text-text-secondary">Desde</label>
+        <input
+          #desde
+          id="filtro-desde"
+          type="date"
+          [value]="rango().desde"
+          (change)="cambiarRango('desde', desde.value)"
+          [attr.aria-invalid]="rangoInvalido()"
+          aria-describedby="error-rango"
+          class="rounded-md border border-border bg-surface px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-primary"
+        />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label for="filtro-hasta" class="text-sm font-medium text-text-secondary">Hasta</label>
+        <input
+          #hasta
+          id="filtro-hasta"
+          type="date"
+          [value]="rango().hasta"
+          (change)="cambiarRango('hasta', hasta.value)"
+          [attr.aria-invalid]="rangoInvalido()"
+          aria-describedby="error-rango"
+          class="rounded-md border border-border bg-surface px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-primary"
+        />
+      </div>
+    </fieldset>
+    <!-- FIN TEMPORAL rango -->
+
+    <div class="flex gap-2">
+      <button
+        type="button"
+        (click)="limpiar()"
+        class="rounded-md border border-border bg-surface px-4 py-2 text-sm hover:bg-muted"
+      >
+        Limpiar
+      </button>
+      <button
+        type="submit"
+        class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      >
+        Buscar
+      </button>
+    </div>
+    <p id="error-rango" role="alert" class="w-full text-xs text-accent">
+      @if (rangoInvalido()) {
+        La fecha "Desde" no puede ser posterior a "Hasta".
+      }
+    </p>
+  </form>
+  <!-- FIN TEMPORAL barra -->
+
+  @if (cargando()) {
+    <p role="status" class="mt-6 text-text-secondary">Cargando bitácora…</p>
+  } @else if (errorCarga()) {
+    <div role="alert" class="mt-6 rounded-md border border-accent bg-muted p-4 text-accent">
+      <p>No se pudo cargar la bitácora.</p>
+      <button
+        type="button"
+        (click)="cargar()"
+        class="mt-2 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-accent"
+      >
+        Reintentar
+      </button>
+    </div>
+  } @else {
+    <p aria-live="polite" class="mt-4 text-sm text-text-secondary">
+      {{ filtrados().length }} {{ filtrados().length === 1 ? 'importación' : 'importaciones' }}
+    </p>
+
+    <!-- TEMPORAL: reemplazar por <app-tabla-datos> (C4-20, G4); el detalle de errores como plantilla de fila -->
+    <div class="mt-2 overflow-x-auto rounded-md border border-border bg-surface">
+      <table class="w-full text-left text-sm">
+        <caption class="sr-only">
+          Historial de importaciones
+        </caption>
+        <thead class="bg-table-header text-brand">
+          <tr>
+            <th scope="col" class="px-4 py-3 font-semibold">Fecha</th>
+            <th scope="col" class="px-4 py-3 font-semibold">Entidad</th>
+            <th scope="col" class="px-4 py-3 font-semibold">Archivo</th>
+            <th scope="col" class="px-4 py-3 font-semibold">Usuario</th>
+            <th scope="col" class="px-4 py-3 text-right font-semibold">Filas</th>
+            <th scope="col" class="px-4 py-3 text-right font-semibold">OK</th>
+            <th scope="col" class="px-4 py-3 text-right font-semibold">Nº de errores</th>
+            <th scope="col" class="px-4 py-3 text-right font-semibold">Detalle</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of filtrados(); track r.id) {
+            <tr class="border-t border-border hover:bg-muted">
+              <td class="px-4 py-3 whitespace-nowrap">{{ r.fecha | date: 'dd/MM/yyyy HH:mm' : '-0500' }}</td>
+              <td class="px-4 py-3">{{ r.entidad }}</td>
+              <td class="px-4 py-3">{{ r.archivo }}</td>
+              <td class="px-4 py-3">{{ r.usuarioNombre ?? 'Usuario eliminado' }}</td>
+              <td class="px-4 py-3 text-right">{{ r.totalFilas }}</td>
+              <!-- La paleta no tiene tokens de éxito ni de advertencia: verde y naranja de Tailwind. -->
+              <td class="px-4 py-3 text-right">
+                @if (r.filasOk > 0) {
+                  <span class="inline-flex items-center gap-2 rounded-full bg-green-50 px-3 py-0.5">
+                    <span class="size-2 rounded-full bg-green-600" aria-hidden="true"></span>
+                    {{ r.filasOk }}
+                  </span>
+                } @else {
+                  0
+                }
+              </td>
+              <td class="px-4 py-3 text-right">
+                <span class="inline-flex items-center gap-1.5">
+                  {{ r.filasError }}
+                  @if (r.filasError > 0) {
+                    <svg class="size-4" viewBox="0 0 16 16" aria-hidden="true">
+                      <circle cx="8" cy="8" r="8" class="fill-amber-500" />
+                      <rect x="7" y="3.5" width="2" height="6" rx="1" class="fill-white" />
+                      <circle cx="8" cy="12" r="1.1" class="fill-white" />
+                    </svg>
+                  } @else {
+                    <!-- Mismo ancho que el ícono, para que los números queden alineados. -->
+                    <span class="size-4" aria-hidden="true"></span>
+                  }
+                </span>
+              </td>
+              <td class="px-4 py-3 text-right">
+                @if (r.errores.length > 0) {
+                  <button
+                    type="button"
+                    (click)="alternarDetalle(r.id)"
+                    [attr.aria-expanded]="abierta() === r.id"
+                    [attr.aria-controls]="'errores-' + r.id"
+                    [attr.aria-label]="(abierta() === r.id ? 'Ocultar' : 'Ver') + ' errores de ' + r.archivo"
+                    class="rounded-md px-2 py-1 text-primary hover:bg-header"
+                  >
+                    {{ abierta() === r.id ? 'Ocultar' : 'Ver errores' }}
+                  </button>
+                } @else {
+                  <span class="text-text-secondary">—</span>
+                }
+              </td>
+            </tr>
+            @if (abierta() === r.id) {
+              <tr [id]="'errores-' + r.id" class="bg-header">
+                <td colspan="8" class="px-4 py-3">
+                  <ul class="space-y-1">
+                    @for (e of r.errores; track $index) {
+                      <li>
+                        <span class="font-medium text-primary-dark">Fila {{ e.fila }}</span>
+                        @if (e.columna) {
+                          <span class="text-text-secondary"> · {{ e.columna }}</span>
+                        }
+                        : {{ e.mensaje }}
+                      </li>
+                    }
+                  </ul>
+                </td>
+              </tr>
+            }
+          } @empty {
+            <tr>
+              <td colspan="8" class="px-4 py-8 text-center text-text-secondary">
+                @if (filtrosActivos() > 0) {
+                  No hay importaciones con esos filtros.
+                } @else {
+                  Todavía no se ha hecho ninguna importación.
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <!-- FIN TEMPORAL tabla -->
+  }
+</section>

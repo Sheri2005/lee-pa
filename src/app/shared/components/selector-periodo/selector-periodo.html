@@ -1,0 +1,28 @@
+<label [for]="idSelect" class="block text-sm font-medium text-primary-dark">
+  Período académico
+</label>
+<select
+  [id]="idSelect"
+  class="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-primary-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+  [disabled]="cargando() || error() || filtrados().length === 0"
+  (change)="alCambiar($any($event.target).value)"
+>
+  <option value="" disabled [selected]="seleccionadoId() === null">
+    @if (cargando()) {
+      Cargando períodos...
+    } @else if (filtrados().length === 0) {
+      No hay períodos disponibles
+    } @else {
+      Selecciona un período
+    }
+  </option>
+  @for (p of filtrados(); track p.id) {
+    <option [value]="p.id" [selected]="p.id === seleccionadoId()">
+      {{ p.codigo }} · {{ p.nombre }} ({{ etiquetaTipo(p.tipo) }})
+    </option>
+  }
+</select>
+
+@if (error()) {
+  <p role="alert" class="m-0 mt-1 text-sm text-accent">No se pudieron cargar los períodos.</p>
+}

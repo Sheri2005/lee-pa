@@ -1,0 +1,71 @@
+<section class="rounded-lg border border-border bg-surface">
+  <header
+    class="flex items-center justify-between gap-4 border-b border-border bg-header px-4 py-3"
+  >
+    <h2 class="font-semibold text-primary-dark">Registros sin código SIAC 1.0</h2>
+
+    @if (estado().tipo === 'listo') {
+      <span class="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-primary">
+        {{ total() }} pendientes
+      </span>
+    }
+  </header>
+
+  @switch (estado().tipo) {
+    @case ('cargando') {
+      <p class="px-4 py-6 text-sm text-text-secondary" role="status">Cargando registros…</p>
+    }
+    @case ('error') {
+      <p class="px-4 py-6 text-sm text-accent" role="alert">
+        No se pudieron cargar los registros. Intenta nuevamente.
+      </p>
+    }
+    @case ('listo') {
+      @if (total() === 0) {
+        <p class="px-4 py-6 text-sm text-text-secondary">
+          Todos los registros tienen código SIAC 1.0.
+        </p>
+      } @else {
+        <div class="divide-y divide-border">
+          @for (grupo of grupos(); track grupo.entidad) {
+            <div>
+              <h3 class="flex items-center gap-2 px-4 pt-4 pb-2 text-sm font-semibold text-brand">
+                {{ grupo.titulo }}
+                <span class="rounded-full bg-muted px-2 py-0.5 text-xs text-primary">
+                  {{ grupo.registros.length }}
+                </span>
+              </h3>
+
+              <table class="w-full table-fixed text-left text-sm">
+                <thead class="bg-table-header text-brand">
+                  <tr>
+                    <th scope="col" class="w-40 px-4 py-2 font-medium">Código</th>
+                    <th scope="col" class="px-4 py-2 font-medium">Nombre</th>
+                    <th scope="col" class="w-32 px-4 py-2"><span class="sr-only">Acción</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (registro of grupo.registros; track registro.id) {
+                    <tr class="border-b border-border last:border-b-0 hover:bg-muted">
+                      <td class="px-4 py-2 font-mono text-primary-dark">{{ registro.codigo }}</td>
+                      <td class="px-4 py-2 text-primary-dark">{{ registro.nombre }}</td>
+                      <td class="px-4 py-2 text-right">
+                        <button
+                          type="button"
+                          class="rounded-md px-3 py-1 text-sm font-medium text-primary hover:bg-muted hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                          (click)="completar(registro)"
+                        >
+                          Completar
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      }
+    }
+  }
+</section>

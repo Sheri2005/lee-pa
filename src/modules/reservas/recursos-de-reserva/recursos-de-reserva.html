@@ -1,0 +1,218 @@
+<section
+  class="min-w-0 rounded-xl border border-border bg-surface shadow-sm"
+  [attr.aria-labelledby]="id + '-titulo'"
+>
+  <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-3.5">
+    <div class="flex items-center gap-2.5">
+      <span class="size-1.5 rounded-[1px] bg-accent-gold" aria-hidden="true"></span>
+      <h3 [id]="id + '-titulo'" class="text-[15px] font-semibold text-primary-dark">
+        Recursos adicionales
+      </h3>
+    </div>
+    @if (totalUnidades()) {
+      <span
+        class="rounded-full border border-accent-gold bg-surface px-2.5 text-[11px] leading-5 font-semibold text-accent-gold tabular-nums transition duration-200 starting:scale-75 starting:opacity-0"
+        aria-live="polite"
+      >
+        {{ totalUnidades() }} {{ totalUnidades() === 1 ? 'unidad pedida' : 'unidades pedidas' }}
+      </span>
+    }
+  </div>
+
+  <div class="px-5 py-4">
+    @switch (carga().tipo) {
+      @case ('sin-franja') {
+        <div class="flex items-center gap-3 rounded-xl bg-muted px-4 py-3 text-sm" role="status">
+          <span
+            class="grid size-8 shrink-0 place-items-center rounded-full bg-surface text-primary shadow-xs"
+          >
+            <svg
+              class="size-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="8.5" />
+              <path d="M12 7.5V12l3 2" />
+            </svg>
+          </span>
+          <span class="text-text-secondary">
+            Elige la fecha y el horario para ver los recursos disponibles.
+          </span>
+        </div>
+      }
+      @case ('cargando') {
+        <div class="grid animate-pulse gap-3 sm:grid-cols-2" aria-hidden="true">
+          @for (n of [1, 2, 3, 4]; track n) {
+            <div class="h-[5.5rem] rounded-xl bg-muted"></div>
+          }
+        </div>
+        <p class="sr-only" role="status">Consultando disponibilidad…</p>
+      }
+      @case ('error') {
+        <p
+          class="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700"
+          role="alert"
+        >
+          <svg
+            class="size-4 shrink-0"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7.5v5M12 16h.01" />
+          </svg>
+          No se pudo consultar la disponibilidad de recursos.
+        </p>
+      }
+      @case ('listo') {
+        @if (lista().length) {
+          <ul class="grid gap-3 sm:grid-cols-2">
+            @for (d of lista(); track d.recurso.id) {
+              <li
+                class="flex flex-col gap-3 rounded-xl border p-3.5 transition-all duration-200"
+                [class]="
+                  cantidad(d.recurso.id)
+                    ? 'border-primary/40 bg-muted/50 shadow-sm'
+                    : d.disponibles
+                      ? 'border-border hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-sm'
+                      : 'border-border opacity-60'
+                "
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <p class="truncate text-sm font-semibold text-primary-dark">
+                      {{ d.recurso.nombre }}
+                    </p>
+                    <p class="text-xs text-text-secondary tabular-nums">
+                      @if (!d.disponibles) {
+                        Sin unidades libres en este horario
+                      } @else if (!cantidad(d.recurso.id)) {
+                        {{ d.disponibles }} de {{ d.recurso.cantidad }} disponibles
+                      } @else if (restantes(d)) {
+                        Quedan {{ restantes(d) }} de {{ d.recurso.cantidad }}
+                      } @else {
+                        No quedan más unidades libres
+                      }
+                    </p>
+                  </div>
+
+                  <div
+                    class="flex h-10 shrink-0 items-center rounded-lg border bg-surface shadow-xs transition-[border-color,box-shadow] duration-200 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10"
+                    [class]="cantidad(d.recurso.id) ? 'border-primary/50' : 'border-border'"
+                  >
+                    <button
+                      type="button"
+                      class="grid size-9 place-items-center rounded-l-lg text-primary transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-30"
+                      [attr.aria-label]="'Quitar una unidad de ' + d.recurso.nombre"
+                      [disabled]="!cantidad(d.recurso.id)"
+                      (click)="cambiar(d, cantidad(d.recurso.id) - 1)"
+                    >
+                      <svg
+                        class="size-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.2"
+                        stroke-linecap="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M5 12h14" />
+                      </svg>
+                    </button>
+                    <input
+                      type="text"
+                      inputmode="numeric"
+                      autocomplete="off"
+                      class="w-10 bg-transparent text-center text-sm font-semibold text-primary-dark tabular-nums focus:outline-none disabled:text-text-secondary"
+                      [attr.aria-label]="'Cantidad de ' + d.recurso.nombre"
+                      [disabled]="!d.disponibles"
+                      [value]="cantidad(d.recurso.id)"
+                      (change)="escrito(d, $event)"
+                    />
+                    <button
+                      type="button"
+                      class="grid size-9 place-items-center rounded-r-lg text-primary transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-30"
+                      [attr.aria-label]="'Agregar una unidad de ' + d.recurso.nombre"
+                      [disabled]="cantidad(d.recurso.id) >= d.disponibles"
+                      (click)="cambiar(d, cantidad(d.recurso.id) + 1)"
+                    >
+                      <svg
+                        class="size-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.2"
+                        stroke-linecap="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 5v14M5 12h14" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <span class="h-1.5 overflow-hidden rounded-full bg-border" aria-hidden="true">
+                  <span
+                    class="block h-full rounded-full transition-[width] duration-500 ease-out starting:w-0 motion-reduce:transition-none"
+                    [class]="d.disponibles ? 'bg-primary/70' : 'bg-text-secondary/40'"
+                    [style.width.%]="(restantes(d) / d.recurso.cantidad) * 100"
+                  ></span>
+                </span>
+
+                @if (avisos()[d.recurso.id]; as aviso) {
+                  <p
+                    class="rounded-md bg-accent-gold/10 px-2.5 py-1.5 text-xs font-medium text-accent-gold transition duration-200 starting:-translate-y-1 starting:opacity-0"
+                    role="status"
+                  >
+                    {{ aviso }}
+                  </p>
+                }
+              </li>
+            }
+          </ul>
+          @if (agregados().length) {
+            <div
+              class="mt-4 flex items-start gap-3 rounded-xl bg-muted px-4 py-3 text-sm transition duration-200 starting:-translate-y-1 starting:opacity-0"
+              aria-live="polite"
+            >
+              <span
+                class="grid size-8 shrink-0 place-items-center rounded-full bg-surface text-primary shadow-xs"
+              >
+                <svg
+                  class="size-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="m5 12.5 4.5 4.5L19 7.5" />
+                </svg>
+              </span>
+              <span>
+                <span class="block font-semibold text-primary-dark">Agregado a la reserva</span>
+                <span class="mt-0.5 block text-text-secondary">{{ agregados().join(' · ') }}</span>
+              </span>
+            </div>
+          }
+        } @else {
+          <p class="text-sm text-text-secondary" role="status">
+            No hay recursos reservables activos.
+          </p>
+        }
+      }
+    }
+  </div>
+</section>

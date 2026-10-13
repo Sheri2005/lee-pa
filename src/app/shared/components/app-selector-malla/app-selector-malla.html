@@ -1,0 +1,11 @@
+<div class="max-w-xl mx-auto p-6 bg-surface rounded-xl shadow-md border border-border">
+  <h2 class="text-2xl font-bold text-primary mb-4">Selector de Malla Curricular</h2>
+  <form [formGroup]="form">
+    <label class="block text-sm font-medium text-gray-700 mb-1">Malla Vigente</label>
+    <select formControlName="mallaId" class="w-full px-3 py-2 border border-border rounded-lg bg-surface focus:ring-2 focus:ring-primary focus:outline-none">
+      @for (m of mallas; track m.id) {
+        <option [value]="m.id">{{ m.codigo }} - {{ m.nombre }}</option>
+      }
+    </select>
+  </form>
+</div>

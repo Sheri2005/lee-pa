@@ -1,0 +1,42 @@
+<div class="max-w-xl mx-auto p-6 bg-surface rounded-xl shadow-md border border-border">
+  <h2 class="text-2xl font-bold mb-6 text-primary">Formulario de Materia</h2>
+
+  <form [formGroup]="materiaForm" (ngSubmit)="onSubmit()" class="space-y-4">
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Código</label>
+      <input type="text" formControlName="codigo" class="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+      <input type="text" formControlName="nombre" class="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+      <textarea formControlName="descripcion" class="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"></textarea>
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Carrera Responsable</label>
+      <select formControlName="carreraId" class="w-full px-3 py-2 border border-border rounded-lg bg-surface focus:ring-2 focus:ring-primary focus:outline-none">
+        <option value="" disabled>-- Seleccione carrera --</option>
+        @for (c of carreras; track c.id) {
+          <option [value]="c.id">{{ c.nombre }}</option>
+        }
+      </select>
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Código SIAC</label>
+      <input type="text" formControlName="codigoSiac" class="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+      <select formControlName="estado" class="w-full px-3 py-2 border border-border rounded-lg bg-surface focus:ring-2 focus:ring-primary focus:outline-none">
+        <option value="Activa">Activa</option>
+        <option value="Inactiva">Inactiva</option>
+      </select>
+    </div>
+    <div class="flex justify-end space-x-3 pt-4 border-t border-border">
+      <button type="button" (click)="onCancelar()" class="px-4 py-2 border border-border rounded-lg text-gray-700 hover:bg-gray-50">Cancelar</button>
+      <button type="submit" class="px-6 py-2 bg-primary text-white font-medium rounded-lg hover:opacity-90 transition-opacity">Guardar</button>
+    </div>
+  </form>
+</div>

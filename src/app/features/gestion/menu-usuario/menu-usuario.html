@@ -1,0 +1,96 @@
+<div class="relative">
+
+    <button
+        type="button"
+        (click)="alternarMenu()"
+        [attr.aria-expanded]="menuAbierto()"
+        aria-haspopup="true"
+        aria-label="Abrir menú de usuario"
+        class="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-accent focus-visible:outline-2 focus-visible:outline-surface"
+    >
+
+        <span class="flex h-9 w-9 items-center justify-center rounded-full bg-surface text-primary">
+            <svg
+                class="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                aria-hidden="true"
+            >
+                <circle cx="12" cy="8" r="4" />
+                <path d="M4 21a8 8 0 0 1 16 0" />
+            </svg>
+        </span>
+
+        <span class="hidden text-left sm:block">
+            <span class="block text-sm font-semibold text-surface">
+                {{ usuario()?.nombres || 'Usuario' }}
+            </span>
+
+            <span class="block text-xs text-header">
+                {{ usuario()?.roles?.join(', ') || 'Sin sesión' }}
+            </span>
+        </span>
+
+        <svg
+        class="h-4 w-4 text-surface"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        aria-hidden="true"
+        >
+            <path d="m6 9 6 6 6-6" />
+        </svg>
+
+    </button>
+
+    @if (menuAbierto()) {
+
+        <div
+        class="absolute right-0 z-50 mt-2 w-64 rounded-lg border border-border bg-surface py-2 shadow-lg"
+        >
+
+            <div class="border-b border-border px-4 py-3">
+
+                <p class="font-semibold text-primary-dark">
+                {{ usuario()?.nombres || 'Usuario no autenticado' }}
+                </p>
+
+                <p class="text-sm text-text-secondary">
+                {{ usuario()?.email || 'Sin correo disponible' }}
+                </p>
+
+                <p class="mt-1 text-xs text-text-secondary">
+                {{ usuario()?.roles?.join(', ') || 'Sin rol asignado' }}
+                </p>
+
+            </div>
+
+            <!-- La navegación al formulario de cambio de contraseña
+                se conectará cuando exista la ruta correspondiente. -->
+            <button
+                type="button"
+                (click)="cambiarContrasena()"
+                [disabled]="!usuario()"
+                class="w-full px-4 py-3 text-left text-sm text-primary-dark hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+            >
+                Cambiar contraseña
+            </button>
+
+            <!-- El cierre de sesión real se realizará mediante AuthService. -->
+            <button
+                type="button"
+                (click)="alCerrarSesion()"
+                [disabled]="!usuario()"
+                class="w-full px-4 py-3 text-left text-sm font-medium text-primary hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+            >
+                Cerrar sesión
+            </button>
+
+        </div>
+
+    }
+
+</div>

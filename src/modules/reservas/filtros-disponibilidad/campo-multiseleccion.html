@@ -1,0 +1,147 @@
+<button
+  type="button"
+  class="flex min-h-11 w-full items-center gap-2 rounded-lg border bg-surface py-2 pr-2.5 pl-3 text-left shadow-xs transition-[border-color,box-shadow] duration-200 hover:border-primary/40 focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:outline-none"
+  [class]="
+    abierto()
+      ? 'border-primary ring-4 ring-primary/10'
+      : valores().length
+        ? 'border-primary/50'
+        : 'border-border'
+  "
+  [id]="idCampo()"
+  [attr.name]="nombre() || null"
+  aria-haspopup="listbox"
+  [attr.aria-expanded]="abierto()"
+  [attr.aria-controls]="idCampo() + '-lista'"
+  (click)="alternar()"
+>
+  @if (valores().length) {
+    <span class="min-w-0 flex-1 truncate font-medium text-primary-dark">{{ resumen().texto }}</span>
+    @if (resumen().resto) {
+      <span
+        class="shrink-0 rounded-full bg-primary px-2 text-[11px] leading-5 font-semibold text-white"
+        >+{{ resumen().resto }}</span
+      >
+    }
+  } @else {
+    <span class="min-w-0 flex-1 truncate text-text-secondary">{{ vacio() }}</span>
+  }
+  <svg
+    class="size-4 shrink-0 text-primary transition-transform duration-200"
+    [class.rotate-180]="abierto()"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2.2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+</button>
+
+@if (abierto()) {
+  <div
+    class="absolute top-full left-0 z-50 mt-2 w-full min-w-64 origin-top overflow-hidden rounded-xl border border-border bg-surface shadow-xl shadow-wine-deep/10 transition duration-200 ease-out starting:-translate-y-2 starting:scale-95 starting:opacity-0"
+  >
+    <div class="border-b border-border p-2">
+      <div
+        class="flex min-h-10 items-center gap-2 rounded-lg bg-muted px-2.5 transition-shadow focus-within:ring-2 focus-within:ring-primary/20"
+      >
+        <svg
+          class="size-4 shrink-0 text-text-secondary"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <circle cx="11" cy="11" r="6.5" />
+          <path d="m20 20-4.2-4.2" />
+        </svg>
+        <input
+          type="search"
+          autocomplete="off"
+          placeholder="Buscar…"
+          aria-label="Buscar opciones"
+          class="w-full min-w-0 bg-transparent text-sm text-primary-dark placeholder:text-text-secondary/60 focus:outline-none"
+          [value]="busqueda()"
+          (input)="busqueda.set(valor($event))"
+          (keydown)="teclaBusqueda($event)"
+        />
+      </div>
+    </div>
+
+    <ul
+      role="listbox"
+      aria-multiselectable="true"
+      [id]="idCampo() + '-lista'"
+      [attr.aria-labelledby]="idCampo()"
+      class="max-h-64 overflow-y-auto overscroll-contain p-1.5"
+    >
+      @for (opcion of filtradas(); track opcion.valor; let i = $index) {
+        <li
+          role="option"
+          tabindex="-1"
+          class="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors duration-150 outline-none hover:bg-header focus:bg-header"
+          [class]="
+            valores().includes(opcion.valor) ? 'font-semibold text-primary' : 'text-primary-dark'
+          "
+          [attr.data-valor]="opcion.valor"
+          [attr.aria-selected]="valores().includes(opcion.valor)"
+          (click)="alternarOpcion(opcion.valor)"
+          (keydown.enter)="alternarOpcion(opcion.valor)"
+          (keydown.space)="$event.preventDefault(); alternarOpcion(opcion.valor)"
+          (keydown)="teclaOpcion($event, i)"
+        >
+          <span
+            class="grid size-[18px] shrink-0 place-items-center rounded-md border transition-all duration-200"
+            [class]="
+              valores().includes(opcion.valor)
+                ? 'border-primary bg-primary text-white'
+                : 'border-text-secondary/40 bg-surface'
+            "
+            aria-hidden="true"
+          >
+            @if (valores().includes(opcion.valor)) {
+              <svg
+                class="size-3 transition duration-200 starting:scale-0"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m5 12.5 4.5 4.5L19 7.5" />
+              </svg>
+            }
+          </span>
+          <span class="min-w-0 flex-1 truncate">{{ opcion.etiqueta }}</span>
+        </li>
+      } @empty {
+        <li class="px-3 py-6 text-center text-sm text-text-secondary">
+          Sin resultados para «{{ busqueda() }}».
+        </li>
+      }
+    </ul>
+
+    <div
+      class="flex items-center justify-between border-t border-border bg-header/40 px-3 py-2 text-xs"
+    >
+      <span class="text-text-secondary">
+        {{ valores().length }} {{ valores().length === 1 ? 'seleccionado' : 'seleccionados' }}
+      </span>
+      <button
+        type="button"
+        class="rounded-md px-2 py-1 font-semibold text-primary transition-colors hover:bg-muted disabled:opacity-40"
+        [disabled]="!valores().length"
+        (click)="limpiar()"
+      >
+        Quitar todos
+      </button>
+    </div>
+  </div>
+}

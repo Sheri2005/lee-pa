@@ -1,0 +1,55 @@
+<div class="relative flex flex-col gap-1">
+  <label [for]="idCampo" class="text-sm font-medium text-text-secondary">{{ etiqueta() }}</label>
+
+  <input
+    [id]="idCampo"
+    type="text"
+    role="combobox"
+    autocomplete="off"
+    aria-autocomplete="list"
+    [attr.aria-expanded]="abierta()"
+    [attr.aria-controls]="abierta() ? idLista : null"
+    [attr.aria-activedescendant]="idActiva()"
+    [value]="texto()"
+    [disabled]="cargando() || error()"
+    [placeholder]="cargando() ? 'Cargando usuarios…' : 'Escribe un nombre o username'"
+    (input)="escribir($any($event.target).value)"
+    (focus)="abierta.set(true)"
+    (keydown)="teclear($event)"
+    (blur)="cerrar()"
+    class="rounded-md border border-border bg-surface px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-primary disabled:bg-muted disabled:text-text-secondary"
+  />
+
+  @if (abierta() && !cargando() && !error()) {
+    <ul
+      [id]="idLista"
+      role="listbox"
+      [attr.aria-label]="etiqueta()"
+      class="absolute top-full z-10 mt-1 max-h-64 w-full overflow-auto rounded-md border border-border bg-surface py-1 shadow-lg"
+    >
+      @for (u of sugerencias(); track u.id; let i = $index) {
+        <li
+          [id]="idCampo + '-op-' + u.id"
+          role="option"
+          [attr.aria-selected]="seleccionado()?.id === u.id"
+          (mousedown)="$event.preventDefault(); elegir(u)"
+          (mouseenter)="activa.set(i)"
+          [class]="
+            i === activa()
+              ? 'cursor-pointer bg-muted px-3 py-2 text-sm'
+              : 'cursor-pointer px-3 py-2 text-sm'
+          "
+        >
+          <span class="font-medium text-primary-dark">{{ u.nombres }}</span>
+          <span class="text-text-secondary"> · {{ u.username }}</span>
+        </li>
+      } @empty {
+        <li class="px-3 py-2 text-sm text-text-secondary">No hay usuarios que coincidan.</li>
+      }
+    </ul>
+  }
+
+  @if (error()) {
+    <p role="alert" class="text-xs text-accent">No se pudieron cargar los usuarios.</p>
+  }
+</div>

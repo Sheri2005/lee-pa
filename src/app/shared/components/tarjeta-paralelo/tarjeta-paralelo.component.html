@@ -1,0 +1,102 @@
+@let p = paralelo();
+
+<!-- Colores: tokens de src/styles.css (ver TAILWIND-Y-COLORES.md) -->
+<div
+  class="flex gap-3 rounded-xl border border-border bg-surface p-3 shadow-sm transition hover:border-accent/40 hover:shadow-md"
+  [class]="arrastrable() ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'"
+>
+  @if (arrastrable()) {
+    <!-- Agarradera: indica que la tarjeta se puede arrastrar -->
+    <div
+      class="-mx-1 flex items-center text-text-secondary/40 group-hover:text-text-secondary"
+      aria-hidden="true"
+    >
+      <svg class="size-4" viewBox="0 0 16 16" fill="currentColor">
+        <circle cx="5.5" cy="3.5" r="1.25" />
+        <circle cx="10.5" cy="3.5" r="1.25" />
+        <circle cx="5.5" cy="8" r="1.25" />
+        <circle cx="10.5" cy="8" r="1.25" />
+        <circle cx="5.5" cy="12.5" r="1.25" />
+        <circle cx="10.5" cy="12.5" r="1.25" />
+      </svg>
+    </div>
+  }
+
+  <!-- Código del paralelo -->
+  <div
+    class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary text-lg font-semibold text-white"
+    aria-hidden="true"
+  >
+    {{ p.codigo }}
+  </div>
+
+  <div class="min-w-0 flex-1 space-y-2">
+    <!-- Materia -->
+    <div>
+      <p class="truncate text-sm font-semibold text-primary-dark" [title]="p.materia.nombre">
+        {{ p.materia.nombre }}
+      </p>
+      <p class="font-mono text-xs text-text-secondary">
+        {{ p.materia.codigo }} · Paralelo {{ p.codigo }}
+      </p>
+    </div>
+
+    <!-- Cupo · horas · tipo de espacio -->
+    <ul class="flex flex-wrap gap-1.5 text-xs text-primary-dark">
+      <li class="rounded-md bg-muted px-2 py-0.5">{{ p.cupo }} cupos</li>
+      <li class="rounded-md bg-muted px-2 py-0.5">{{ p.horasSemanales }} h/sem</li>
+      <li class="rounded-md bg-muted px-2 py-0.5">{{ tipoEspacio() }}</li>
+    </ul>
+
+    <!-- Docente -->
+    @if (p.docente) {
+      <div class="flex min-w-0 items-center gap-2">
+        <span
+          class="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-primary"
+          aria-hidden="true"
+        >
+          {{ iniciales() }}
+        </span>
+        <span class="truncate text-xs text-primary-dark">{{ p.docente.nombres }}</span>
+        @if (p.estadoDocente === 'SUGERIDO') {
+          <span
+            class="flex shrink-0 items-center gap-1 rounded-full border border-accent-gold/40 bg-accent-gold/10 px-2 py-0.5 text-[10px] font-medium text-primary-dark"
+          >
+            <span class="size-1.5 rounded-full bg-accent-gold" aria-hidden="true"></span>
+            Sugerido
+          </span>
+        }
+      </div>
+    } @else {
+      <p class="text-xs text-text-secondary italic">Sin docente asignado</p>
+    }
+
+    <!-- Horas ubicadas en el horario (solo si se envía horasUbicadas) -->
+    @if (muestraProgreso()) {
+      <div class="space-y-1">
+        <div
+          class="h-1.5 overflow-hidden rounded-full bg-muted"
+          role="progressbar"
+          [attr.aria-valuenow]="horasUbicadas()"
+          aria-valuemin="0"
+          [attr.aria-valuemax]="p.horasSemanales"
+          aria-label="Horas ubicadas"
+        >
+          <div
+            class="h-full rounded-full transition-all"
+            [class]="horasPendientes() === 0 ? 'bg-primary' : 'bg-accent-gold'"
+            [style.width.%]="porcentajeUbicado()"
+          ></div>
+        </div>
+        <p class="text-[11px] text-text-secondary">
+          @if (horasPendientes() === 0) {
+            <span class="font-medium text-primary">✓ Todas las horas ubicadas</span>
+          } @else {
+            {{ horasUbicadas() }} de {{ p.horasSemanales }} h ubicadas ·
+            <span class="font-medium text-primary-dark">{{ horasPendientes() }} h pendientes</span>
+          }
+        </p>
+      </div>
+    }
+  </div>
+</div>

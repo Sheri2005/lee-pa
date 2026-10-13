@@ -1,0 +1,58 @@
+<fieldset class="m-0 min-w-0 border-0 p-0" [disabled]="mallaId() == null || cargando()">
+  <legend class="p-0 text-sm font-medium text-primary-dark">{{ etiqueta() }}</legend>
+
+  @if (mallaId() == null) {
+    <p class="m-0 mt-1 text-sm text-text-secondary">Elige una malla para ver sus niveles.</p>
+  } @else if (cargando()) {
+    <p class="m-0 mt-1 text-sm text-text-secondary">Cargando niveles...</p>
+  } @else if (error()) {
+    <p role="alert" class="m-0 mt-1 text-sm text-accent">No se pudieron cargar los niveles.</p>
+  } @else if (niveles().length === 0) {
+    <p class="m-0 mt-1 text-sm text-text-secondary">Esta malla no tiene niveles.</p>
+  } @else {
+    <div class="mt-1 flex flex-wrap gap-2">
+      <!-- Dos bloques (y no un [type] dinámico) para que al cambiar de modo se creen inputs nuevos -->
+      @if (multiple()) {
+        @for (n of niveles(); track n) {
+          <label class="cursor-pointer">
+            <input
+              class="peer sr-only"
+              type="checkbox"
+              [name]="idGrupo"
+              [value]="n"
+              [checked]="estaMarcado(n)"
+              [attr.aria-label]="'Nivel ' + n"
+              (change)="alCambiar(n, $any($event.target).checked)"
+            />
+            <span [class]="claseChip">{{ n }}</span>
+          </label>
+        }
+      } @else {
+        @for (n of niveles(); track n) {
+          <label class="cursor-pointer">
+            <input
+              class="peer sr-only"
+              type="radio"
+              [name]="idGrupo"
+              [value]="n"
+              [checked]="estaMarcado(n)"
+              [attr.aria-label]="'Nivel ' + n"
+              (change)="alCambiar(n, $any($event.target).checked)"
+            />
+            <span [class]="claseChip">{{ n }}</span>
+          </label>
+        }
+      }
+    </div>
+
+    @if (seleccion().length > 0) {
+      <button
+        type="button"
+        class="mt-2 text-sm font-medium text-primary hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        (click)="limpiar()"
+      >
+        Limpiar selección
+      </button>
+    }
+  }
+</fieldset>

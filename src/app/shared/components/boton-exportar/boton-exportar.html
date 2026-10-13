@@ -1,0 +1,67 @@
+<div class="relative inline-block text-left">
+  <button
+    type="button"
+    class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50"
+    [disabled]="exportacionDeshabilitada()"
+    [attr.aria-expanded]="menuAbierto()"
+    [attr.title]="
+      exportacionDeshabilitada()
+        ? 'No hay datos disponibles para exportar'
+        : 'Exportar datos'
+    "
+    aria-haspopup="menu"
+    (click)="alternarMenu()"
+  >
+    <svg
+      class="h-4 w-4"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      aria-hidden="true"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"
+      />
+    </svg>
+
+    <span>Exportar</span>
+
+    <svg
+      class="h-4 w-4 transition-transform"
+      [class.rotate-180]="menuAbierto()"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      aria-hidden="true"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        d="m6 9 6 6 6-6"
+      />
+    </svg>
+  </button>
+
+  @if (menuAbierto()) {
+    <div
+      class="absolute right-0 z-20 mt-2 w-44 overflow-hidden rounded-lg border border-border bg-surface py-1 shadow-lg"
+      role="menu"
+      aria-label="Formatos de exportación"
+    >
+      @for (formato of formatos(); track formato) {
+        <button
+          type="button"
+          class="flex w-full items-center px-4 py-2 text-left text-sm text-primary-dark transition-colors hover:bg-muted hover:text-primary focus-visible:bg-muted focus-visible:outline-none"
+          role="menuitem"
+          (click)="exportar(formato)"
+        >
+          {{ etiquetaFormato(formato) }}
+        </button>
+      }
+    </div>
+  }
+</div>

@@ -1,0 +1,147 @@
+@let estado = vista();
+<dialog
+  #dialogo
+  class="m-auto w-[min(36rem,calc(100%-2rem))] max-h-[90vh] overflow-y-auto rounded-lg border border-border bg-surface p-0 text-primary-dark shadow-xl backdrop:bg-black/40"
+  [attr.aria-labelledby]="prefijo + '-titulo'"
+  [attr.aria-busy]="guardando() || estado.tipo === 'cargando'"
+  (cancel)="alPresionarEsc($event)"
+  (click)="alClickFondo($event)"
+>
+  <form [formGroup]="form" class="space-y-5 p-6" novalidate (ngSubmit)="guardarCurso()">
+    <header>
+      <h2 [id]="prefijo + '-titulo'" class="text-lg font-semibold">Agregar curso manual</h2>
+      <p class="mt-1 text-sm text-text-secondary">
+        Selecciona una materia de tu carrera e indica cuántos paralelos necesitas y por qué.
+      </p>
+    </header>
+    @switch (estado.tipo) {
+      @case ('cargando') {
+        <app-spinner-carga mensaje="Cargando planificación…" />
+      }
+      @case ('error') {
+        <p role="alert">No se pudo cargar la planificación.</p>
+        <button type="button" class="rounded border border-border px-3 py-2" (click)="reintentar()">
+          Reintentar
+        </button>
+      }
+      @case ('listo') {
+        <p class="text-sm">
+          {{ estado.contexto.planificacion.carrera.nombre }} ·
+          {{ estado.contexto.planificacion.periodo.codigo }}
+        </p>
+        @if (!editable()) {
+          <p role="status" class="rounded bg-muted p-3">
+            Esta planificación es de solo lectura. No se pueden agregar cursos.
+          </p>
+        } @else {
+          <fieldset class="space-y-4 disabled:opacity-60" [disabled]="guardando()">
+            <legend class="sr-only">Datos del curso</legend>
+            @if (seleccionada(); as materia) {
+              <div class="rounded border border-border bg-muted p-3">
+                <p class="font-medium">{{ materia.codigo }} · {{ materia.nombre }}</p>
+                <p class="text-sm text-text-secondary">
+                  Responsable: {{ materia.carreraResponsable }}
+                </p>
+                <button
+                  type="button"
+                  class="mt-2 rounded border border-border px-3 py-2"
+                  (click)="cambiarMateria()"
+                >
+                  Cambiar materia
+                </button>
+              </div>
+            } @else {
+              <!-- C1-31 de G1: su versión actual usa materiaChange; todavía no implementa CVA.
+                   No filtrar por malla: también se permiten materias propias fuera de ella. -->
+              <app-selector-materia
+                [carreraResponsableId]="estado.contexto.planificacion.carrera.id"
+                (materiaChange)="seleccionarMateria($event)"
+              />
+              @if (enviado()) {
+                <p role="alert" class="text-sm text-accent">Selecciona una materia.</p>
+              }
+            }
+            @if (duplicada()) {
+              <p role="alert" class="text-sm text-accent">
+                Esta materia ya tiene un curso manual en la planificación.
+              </p>
+            }
+            <div>
+              <label [for]="prefijo + '-paralelos'" class="block text-sm font-medium"
+                >Número de paralelos</label
+              >
+              <input
+                [id]="prefijo + '-paralelos'"
+                formControlName="numeroParalelos"
+                type="number"
+                min="1"
+                step="1"
+                class="mt-1 w-full rounded border border-border bg-surface px-3 py-2"
+                [attr.aria-invalid]="
+                  form.controls.numeroParalelos.invalid &&
+                  (form.controls.numeroParalelos.touched || enviado())
+                "
+                [attr.aria-describedby]="prefijo + '-error-paralelos'"
+              />
+              <p [id]="prefijo + '-error-paralelos'" class="text-sm text-accent">
+                @if (
+                  form.controls.numeroParalelos.invalid &&
+                  (form.controls.numeroParalelos.touched || enviado())
+                ) {
+                  Introduce un entero positivo.
+                }
+              </p>
+            </div>
+            <div>
+              <label [for]="prefijo + '-motivo'" class="block text-sm font-medium">Motivo</label>
+              <textarea
+                [id]="prefijo + '-motivo'"
+                formControlName="motivo"
+                rows="3"
+                [attr.maxlength]="maxMotivo"
+                class="mt-1 w-full rounded border border-border bg-surface px-3 py-2"
+                [attr.aria-invalid]="
+                  form.controls.motivo.invalid && (form.controls.motivo.touched || enviado())
+                "
+                [attr.aria-describedby]="prefijo + '-ayuda-motivo'"
+              ></textarea>
+              <p [id]="prefijo + '-ayuda-motivo'" class="text-sm text-text-secondary">
+                Obligatorio. Máximo {{ maxMotivo }} caracteres.
+              </p>
+              @if (form.controls.motivo.invalid && (form.controls.motivo.touched || enviado())) {
+                <p role="alert" class="text-sm text-accent">
+                  Escribe un motivo válido; los espacios solos no cuentan.
+                </p>
+              }
+            </div>
+          </fieldset>
+        }
+      }
+    }
+    @if (errorGuardado()) {
+      <p role="alert" class="rounded border border-accent p-3 text-sm text-accent">
+        {{ errorGuardado() }}
+      </p>
+    }
+    @if (guardando()) {
+      <p role="status">Guardando curso…</p>
+    }
+    <footer class="flex justify-end gap-2">
+      <button
+        type="button"
+        class="rounded border border-border px-4 py-2 disabled:opacity-50"
+        [disabled]="guardando()"
+        (click)="solicitarCancelacion()"
+      >
+        Cancelar
+      </button>
+      <button
+        type="submit"
+        class="rounded bg-primary px-4 py-2 text-white disabled:opacity-50"
+        [disabled]="!puedeGuardar()"
+      >
+        {{ guardando() ? 'Guardando…' : 'Agregar curso' }}
+      </button>
+    </footer>
+  </form>
+</dialog>

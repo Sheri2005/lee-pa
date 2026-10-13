@@ -1,0 +1,35 @@
+<div class="max-w-4xl mx-auto p-6 bg-surface rounded-xl shadow-md border border-border">
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold text-primary">Listado de Materias</h2>
+    <a routerLink="/gestion/materias/nuevo" class="px-4 py-2 bg-primary text-white font-medium rounded-lg hover:opacity-90 transition-opacity">
+      Nueva Materia
+    </a>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse text-sm">
+      <thead>
+        <tr class="border-b border-border text-gray-600">
+          <th class="py-3 px-4">Código</th>
+          <th class="py-3 px-4">Nombre</th>
+          <th class="py-3 px-4">Carrera</th>
+          <th class="py-3 px-4">Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (mat of materias; track mat.id) {
+          <tr class="border-b border-border hover:bg-gray-50 transition-colors">
+            <td class="py-3 px-4 font-semibold">{{ mat.codigo }}</td>
+            <td class="py-3 px-4">{{ mat.nombre }}</td>
+            <td class="py-3 px-4">{{ mat.carrera }}</td>
+            <td class="py-3 px-4">
+              <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-green-50 text-green-700">
+                {{ mat.estado }}
+              </span>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,21 @@
+<div class="shell bg-background">
+
+  <app-barra-superior (alternarMenu)="alternarMenu()"/>
+
+  <div class="contenido">
+
+    <aside class="menu-lateral bg-surface" [class.menu-colapsado]="menuColapsado()">
+      <app-menu-lateral [colapsado]="menuColapsado()" />
+    </aside>
+
+    <main class="principal bg-background">
+      <router-outlet></router-outlet>
+    </main>
+
+  </div>
+
+  <footer class="pie bg-header text-text-secondary border-t border-border">
+    <p>© 2026 Sistema Universitario</p>
+  </footer>
+
+</div>

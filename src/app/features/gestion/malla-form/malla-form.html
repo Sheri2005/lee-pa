@@ -1,0 +1,89 @@
+<form
+  [formGroup]="form"
+  (ngSubmit)="alGuardar()"
+  novalidate
+  class="rounded-lg border border-border bg-surface p-4"
+>
+  <h2 class="text-lg font-semibold text-primary-dark">{{ titulo() }}</h2>
+
+  <div class="mt-4 grid gap-4 md:grid-cols-2">
+    <div>
+      <label [for]="prefijo + '-codigo'" class="block text-sm font-medium text-primary-dark">
+        Código <span aria-hidden="true" class="text-accent">*</span>
+      </label>
+      <input
+        [id]="prefijo + '-codigo'"
+        formControlName="codigo"
+        type="text"
+        autocomplete="off"
+        placeholder="Ej.: M-COMP-2024"
+        [class]="clase('codigo')"
+        [attr.aria-invalid]="error('codigo') ? true : null"
+        [attr.aria-describedby]="error('codigo') ? prefijo + '-codigo-error' : null"
+      />
+      @if (error('codigo'); as mensaje) {
+        <p [id]="prefijo + '-codigo-error'" role="alert" class="m-0 mt-1 text-sm text-accent">
+          {{ mensaje }}
+        </p>
+      }
+    </div>
+
+    <div>
+      <label [for]="prefijo + '-anio'" class="block text-sm font-medium text-primary-dark">
+        Año de vigencia <span aria-hidden="true" class="text-accent">*</span>
+      </label>
+      <input
+        [id]="prefijo + '-anio'"
+        formControlName="anioInicio"
+        type="number"
+        step="1"
+        placeholder="Ej.: 2024"
+        [class]="clase('anioInicio')"
+        [attr.aria-invalid]="error('anioInicio') ? true : null"
+        [attr.aria-describedby]="error('anioInicio') ? prefijo + '-anio-error' : null"
+      />
+      @if (error('anioInicio'); as mensaje) {
+        <p [id]="prefijo + '-anio-error'" role="alert" class="m-0 mt-1 text-sm text-accent">
+          {{ mensaje }}
+        </p>
+      }
+    </div>
+
+    <div class="md:col-span-2">
+      <label [for]="prefijo + '-nombre'" class="block text-sm font-medium text-primary-dark">
+        Nombre <span aria-hidden="true" class="text-accent">*</span>
+      </label>
+      <input
+        [id]="prefijo + '-nombre'"
+        formControlName="nombre"
+        type="text"
+        autocomplete="off"
+        placeholder="Ej.: Malla 2024"
+        [class]="clase('nombre')"
+        [attr.aria-invalid]="error('nombre') ? true : null"
+        [attr.aria-describedby]="error('nombre') ? prefijo + '-nombre-error' : null"
+      />
+      @if (error('nombre'); as mensaje) {
+        <p [id]="prefijo + '-nombre-error'" role="alert" class="m-0 mt-1 text-sm text-accent">
+          {{ mensaje }}
+        </p>
+      }
+    </div>
+  </div>
+
+  <div class="mt-6 flex justify-end gap-3">
+    <button
+      type="button"
+      class="rounded-md border border-border bg-surface px-4 py-2 font-medium text-primary-dark hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      (click)="cancelar.emit()"
+    >
+      Cancelar
+    </button>
+    <button
+      type="submit"
+      class="rounded-md bg-primary px-4 py-2 font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+    >
+      Guardar
+    </button>
+  </div>
+</form>

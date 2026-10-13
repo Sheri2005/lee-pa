@@ -1,0 +1,173 @@
+<div
+  class="flex min-h-11 items-center rounded-lg border bg-surface shadow-xs transition-[border-color,box-shadow] duration-200 focus-within:ring-4 hover:border-primary/40"
+  [class]="
+    invalido()
+      ? 'border-red-700 focus-within:border-red-700 focus-within:ring-red-700/10'
+      : abierto()
+        ? 'border-primary ring-4 ring-primary/10'
+        : 'border-border focus-within:border-primary focus-within:ring-primary/10'
+  "
+>
+  <input
+    type="text"
+    inputmode="numeric"
+    autocomplete="off"
+    placeholder="dd/mm/aaaa"
+    class="w-full min-w-0 flex-1 bg-transparent py-2 pl-3 text-primary-dark tabular-nums placeholder:text-text-secondary/50 focus:outline-none"
+    [id]="idCampo()"
+    [attr.name]="nombre() || null"
+    [value]="texto()"
+    [attr.aria-invalid]="invalido()"
+    [attr.aria-describedby]="describedBy()"
+    (input)="escribir($event, false)"
+    (change)="escribir($event, true)"
+    (keydown.alt.arrowdown)="alternar()"
+  />
+  <button
+    type="button"
+    class="mr-1 grid size-9 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted hover:text-primary focus-visible:outline-2 focus-visible:outline-primary"
+    [class]="abierto() ? 'bg-muted text-primary' : 'text-text-secondary'"
+    aria-haspopup="dialog"
+    [attr.aria-expanded]="abierto()"
+    [attr.aria-label]="abierto() ? 'Cerrar calendario' : 'Abrir calendario'"
+    (click)="alternar()"
+  >
+    <svg
+      class="size-[18px]"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.8"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+      <path d="M3.5 9.5h17M8 3v4M16 3v4" />
+      <path d="M8 13.5h.01M12 13.5h.01M16 13.5h.01M8 17h.01M12 17h.01" stroke-width="2.4" />
+    </svg>
+  </button>
+</div>
+
+@if (abierto()) {
+  <div
+    role="dialog"
+    aria-label="Elegir fecha"
+    class="absolute left-0 z-50 w-[19rem] max-w-[calc(100vw-1rem)] rounded-2xl border border-border bg-surface p-3 shadow-xl shadow-wine-deep/10 transition duration-200 ease-out starting:scale-95 starting:opacity-0 motion-reduce:transition-none"
+    [class]="
+      posicion().arriba
+        ? 'bottom-full mb-2 origin-bottom-left starting:translate-y-2'
+        : 'top-full mt-2 origin-top-left starting:-translate-y-2'
+    "
+    [style.left.px]="posicion().izquierda"
+  >
+    <div class="flex items-center justify-between pb-2">
+      <button
+        type="button"
+        class="grid size-9 place-items-center rounded-full text-primary transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary"
+        aria-label="Mes anterior"
+        (click)="cambiarMes(-1)"
+      >
+        <svg
+          class="size-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="m15 6-6 6 6 6" />
+        </svg>
+      </button>
+      <p class="text-sm font-semibold text-primary-dark" aria-live="polite">{{ titulo() }}</p>
+      <button
+        type="button"
+        class="grid size-9 place-items-center rounded-full text-primary transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary"
+        aria-label="Mes siguiente"
+        (click)="cambiarMes(1)"
+      >
+        <svg
+          class="size-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="m9 6 6 6-6 6" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="grid grid-cols-7 gap-0.5 text-center">
+      @for (dia of DIAS_CORTOS; track dia) {
+        <span
+          class="py-1.5 text-[11px] font-semibold tracking-wide text-text-secondary uppercase"
+          aria-hidden="true"
+          >{{ dia }}</span
+        >
+      }
+      @for (semana of semanas(); track $index) {
+        @for (dia of semana; track dia.iso) {
+          <button
+            type="button"
+            class="mx-auto grid size-9 place-items-center rounded-full text-sm tabular-nums transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary motion-reduce:transition-none"
+            [class]="
+              dia.seleccionado
+                ? 'bg-primary font-semibold text-white shadow-md shadow-primary/30 hover:bg-accent'
+                : dia.deshabilitado
+                  ? 'cursor-not-allowed text-text-secondary/30 line-through'
+                  : dia.extremo
+                    ? 'bg-primary/15 font-semibold text-primary ring-1 ring-primary/50 hover:bg-primary/25'
+                    : dia.enRango
+                      ? 'rounded-lg bg-muted font-medium text-primary hover:bg-primary/15'
+                      : dia.hoy
+                        ? 'font-semibold text-accent-gold ring-1 ring-accent-gold/60 hover:bg-accent-gold/10'
+                        : dia.delMes
+                          ? 'text-primary-dark hover:bg-muted hover:text-primary motion-safe:hover:scale-110'
+                          : 'text-text-secondary/45 hover:bg-muted'
+            "
+            [attr.data-fecha]="dia.iso"
+            [attr.aria-label]="dia.etiqueta"
+            [attr.aria-pressed]="dia.seleccionado"
+            [attr.aria-current]="dia.hoy ? 'date' : null"
+            [attr.tabindex]="dia.iso === enfocado() ? 0 : -1"
+            [disabled]="dia.deshabilitado"
+            (click)="elegir(dia)"
+            (keydown)="teclaDia($event)"
+          >
+            {{ dia.numero }}
+          </button>
+        }
+      }
+    </div>
+
+    <div class="mt-2 flex items-center justify-between border-t border-border pt-2">
+      <button
+        type="button"
+        class="rounded-md px-2.5 py-1.5 text-xs font-semibold text-text-secondary transition-colors hover:bg-muted hover:text-primary"
+        (click)="borrar()"
+      >
+        Borrar
+      </button>
+      @if (nombreExtremo() && otroExtremo()) {
+        <span class="flex items-center gap-1.5 text-xs text-text-secondary">
+          <span class="size-2.5 rounded-full bg-primary/15 ring-1 ring-primary/50"></span>
+          {{ nombreExtremo() }} {{ fechaCorta(otroExtremo()) }}
+        </span>
+      }
+      <button
+        type="button"
+        class="rounded-md px-2.5 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+        [disabled]="!hoyPermitido()"
+        (click)="elegirHoy()"
+      >
+        Hoy
+      </button>
+    </div>
+  </div>
+}

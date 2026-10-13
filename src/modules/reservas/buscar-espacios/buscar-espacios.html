@@ -1,0 +1,29 @@
+<main class="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+  <!-- TEMPORAL: sustituir por app-encabezado-pagina (C3-23) cuando G3 lo integre. -->
+  <header class="mb-6 border-b border-border pb-4">
+    <p class="text-sm font-medium text-text-secondary">Reservas</p>
+    <h1 class="mt-1 text-2xl font-semibold text-primary-dark">Buscar espacios</h1>
+    <p class="mt-1 max-w-3xl text-sm text-text-secondary">
+      Elige la fecha, el horario y los requisitos para consultar los espacios disponibles.
+    </p>
+  </header>
+
+  <app-filtros-disponibilidad (buscar)="buscar($event)" />
+
+  @if (error()) {
+    <p
+      class="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+      role="alert"
+    >
+      No se pudo consultar la disponibilidad. Inténtalo de nuevo más tarde.
+    </p>
+  } @else {
+    <div class="mt-8">
+      <app-resultados-disponibilidad
+        [espacios]="espacios()"
+        [cargando]="cargando()"
+        (reservar)="reservar($event)"
+      />
+    </div>
+  }
+</main>

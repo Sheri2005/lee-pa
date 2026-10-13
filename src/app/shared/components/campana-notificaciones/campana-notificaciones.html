@@ -1,0 +1,80 @@
+<div class="contenedor-notificaciones">
+
+  <button
+    class="boton-campana"
+    type="button"
+    (click)="toggleNotificaciones()">
+
+    🔔
+
+    @if (noLeidas > 0) {
+      <span class="contador">{{ noLeidas }}</span>
+    }
+
+  </button>
+
+  @if (mostrarNotificaciones) {
+
+    <div class="panel-notificaciones">
+
+      <div class="cabecera">
+        <strong>Notificaciones</strong>
+
+        @if (noLeidas > 0) {
+          <button
+            type="button"
+            (click)="marcarTodasComoLeidas()">
+            Marcar todas como leídas
+          </button>
+        }
+      </div>
+
+      @if (notificaciones.length === 0) {
+
+        <p>No tienes notificaciones.</p>
+
+      } @else {
+
+        @for (notificacion of notificaciones; track notificacion.id) {
+
+          <div
+            class="notificacion"
+            [class.no-leida]="!notificacion.leida">
+
+            <strong>{{ notificacion.titulo }}</strong>
+
+            <p>{{ notificacion.mensaje }}</p>
+
+            <small>
+              {{ notificacion.fecha | date:'dd/MM/yyyy HH:mm' }}
+            </small>
+
+            <div class="acciones">
+
+              <a
+                [href]="notificacion.enlace"
+                (click)="marcarComoLeida(notificacion)">
+                Ver
+              </a>
+
+              @if (!notificacion.leida) {
+                <button
+                  type="button"
+                  (click)="marcarComoLeida(notificacion)">
+                  Marcar como leída
+                </button>
+              }
+
+            </div>
+
+          </div>
+
+        }
+
+      }
+
+    </div>
+
+  }
+
+</div>

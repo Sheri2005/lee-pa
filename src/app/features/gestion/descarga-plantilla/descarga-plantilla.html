@@ -1,0 +1,38 @@
+<div class="rounded-lg border border-border bg-surface p-5">
+  <h2 class="font-semibold text-primary-dark">Descarga la plantilla</h2>
+  <p class="mt-1 text-sm text-text-secondary">
+    Llena la plantilla de «{{ config().nombre }}» sin cambiar los encabezados.
+    @if (hayEjemplo()) {
+      La fila de ejemplo se ignora al importar; puedes borrarla o reemplazarla.
+    }
+  </p>
+
+  <ul class="mt-4 grid gap-1 text-sm sm:grid-cols-2">
+    @for (c of config().columnas; track c.clave) {
+      <li class="flex items-center gap-2 text-primary-dark">
+        <span class="size-1.5 rounded-[1px] bg-accent-gold" aria-hidden="true"></span>
+        {{ c.etiqueta }}
+        @if (c.obligatorio) {
+          <span class="text-xs text-text-secondary">(obligatorio)</span>
+        }
+      </li>
+    }
+  </ul>
+
+  <div class="mt-5 flex flex-wrap gap-3">
+    <button
+      type="button"
+      class="rounded-md bg-primary px-4 py-2 font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      (click)="descargar('csv')"
+    >
+      Descargar CSV
+    </button>
+    <button
+      type="button"
+      class="rounded-md border border-primary px-4 py-2 font-medium text-primary hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      (click)="descargar('xlsx')"
+    >
+      Descargar Excel
+    </button>
+  </div>
+</div>

@@ -1,0 +1,37 @@
+<section
+  aria-labelledby="acceso-denegado-titulo"
+  class="mx-auto flex max-w-md flex-col items-center px-4 py-16 text-center"
+>
+  <!-- Bloque de estado vacío: reemplazable por <app-estado-vacio> (G2) -->
+  <div class="flex size-16 items-center justify-center rounded-full bg-muted text-primary">
+    <svg
+      class="size-8"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.75"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M6 11V8a6 6 0 0112 0v3M5 11h14v10H5zM12 15v2" />
+    </svg>
+  </div>
+
+  <p class="mt-4 text-sm font-semibold tracking-widest text-text-secondary">ERROR 403</p>
+  <h1 id="acceso-denegado-titulo" class="mt-1 text-2xl font-semibold text-primary-dark">
+    Acceso denegado
+  </h1>
+  <p class="mt-2 text-text-secondary">
+    No tienes permiso para ver esta página. Si crees que es un error, comunícate con el
+    administrador del sistema.
+  </p>
+  <!-- Fin del bloque reemplazable -->
+
+  <a
+    routerLink="/"
+    class="mt-6 rounded-md bg-primary px-4 py-2 font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+  >
+    Volver al inicio
+  </a>
+</section>

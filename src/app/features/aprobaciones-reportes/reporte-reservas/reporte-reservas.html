@@ -1,0 +1,235 @@
+<main class="mx-auto grid w-full max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:py-12">
+  <header class="grid gap-2">
+    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-accent">
+      Grupo 5 · C5-18
+    </p>
+    <h1 class="text-2xl font-bold text-primary-dark sm:text-3xl">
+      Reporte de reservas
+    </h1>
+    <p class="max-w-3xl text-sm leading-6 text-text-secondary sm:text-base">
+      Consulta reservas por espacio, el tiempo promedio de aprobación y su distribución mensual.
+    </p>
+  </header>
+
+  @if (estado === 'servicioPendiente') {
+    <section
+      class="rounded-xl border border-border bg-surface p-6 text-sm text-text-secondary"
+      role="status"
+    >
+      <h2 class="font-semibold text-primary-dark">ReporteService pendiente</h2>
+      <p class="mt-2">
+        La página está lista para conectarse cuando el servicio de reportes esté disponible.
+      </p>
+    </section>
+  } @else {
+    @if (catalogos) {
+      <app-filtros-reporte
+        [facultades]="catalogos.facultades"
+        [carreras]="catalogos.carreras"
+        [periodos]="catalogos.periodos"
+        (filtrosAplicados)="aplicarFiltros($event)"
+      />
+
+      <section
+        class="grid gap-4 rounded-2xl border border-border bg-surface p-5 shadow-sm sm:grid-cols-2 sm:p-6"
+        aria-label="Filtros de reservas"
+      >
+        <label class="grid gap-2 text-sm font-medium text-primary-dark">
+          Espacio
+          <select
+            class="rounded-lg border border-border bg-surface px-3 py-2"
+            [value]="espacioIdSeleccionado ?? ''"
+            (change)="cambiarEspacio($any($event.target).value || null)"
+          >
+            <option value="">Todos los espacios</option>
+            @for (espacio of catalogos.espacios; track espacio.id) {
+              <option [value]="espacio.id">{{ espacio.nombre }}</option>
+            }
+          </select>
+        </label>
+
+        <div class="grid gap-2 text-sm font-medium text-primary-dark">
+          <span>Mes del reporte</span>
+          <div class="flex items-center justify-between gap-3">
+            <button
+              type="button"
+              class="rounded-lg border border-border px-3 py-2 hover:bg-filter focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              aria-label="Mes anterior"
+              (click)="mesAnterior()"
+            >
+              Anterior
+            </button>
+            <p class="text-center capitalize" aria-live="polite">{{ nombreMes }}</p>
+            <button
+              type="button"
+              class="rounded-lg border border-border px-3 py-2 hover:bg-filter focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              aria-label="Mes siguiente"
+              (click)="mesSiguiente()"
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      </section>
+    }
+
+    @if (estado === 'cargando') {
+      <p
+        class="rounded-xl border border-border bg-surface p-5 text-sm text-text-secondary"
+        role="status"
+        aria-live="polite"
+      >
+        Cargando el reporte…
+      </p>
+    } @else if (estado === 'error') {
+      <section
+        class="grid gap-3 rounded-xl border border-red-200 bg-surface p-5 text-sm text-red-800"
+        role="alert"
+      >
+        <p>{{ mensajeError }}</p>
+        <button
+          type="button"
+          class="w-fit rounded-lg border border-red-300 px-4 py-2 font-medium transition hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          (click)="reintentar()"
+        >
+          Reintentar
+        </button>
+      </section>
+    } @else {
+      <section class="grid grid-cols-1 gap-4 sm:grid-cols-2" aria-label="Indicadores de reservas">
+        <app-tarjeta-indicador
+          titulo="Reservas del mes"
+          [valor]="resumen.totalReservas"
+          icono="R"
+          detalle="Según los filtros aplicados"
+          color="primary"
+        />
+        <app-tarjeta-indicador
+          titulo="Tiempo promedio de aprobación"
+          [valor]="resumen.tiempoPromedioAprobacionHoras === null
+            ? 'Sin datos'
+            : (resumen.tiempoPromedioAprobacionHoras | number: '1.0-1') + ' h'"
+          icono="h"
+          detalle="Promedio de las reservas con tiempo registrado"
+          color="accent"
+        />
+      </section>
+
+      <section class="grid gap-4 rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6">
+        <app-grafico
+          tipo="barras"
+          titulo="Reservas por día"
+          [etiquetas]="resumen.etiquetas"
+          [series]="seriesGrafico"
+        />
+      </section>
+
+      <section
+        class="grid gap-4 rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6"
+        aria-labelledby="titulo-calendario-reservas"
+      >
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <h2 id="titulo-calendario-reservas" class="text-lg font-semibold capitalize text-primary-dark">
+            Calendario de {{ nombreMes }}
+          </h2>
+          @if (espacioSeleccionadoNombre) {
+            <p class="text-sm text-text-secondary">
+              {{ espacioSeleccionadoNombre }}
+            </p>
+          }
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-border">
+          <table class="w-full min-w-[720px] table-fixed border-collapse text-center text-sm">
+            <caption class="sr-only">Cantidad de reservas por día del mes seleccionado</caption>
+            <thead class="bg-header text-primary-dark">
+              <tr>
+                @for (dia of nombresDias; track dia) {
+                  <th scope="col" class="px-2 py-3 font-semibold">{{ dia }}</th>
+                }
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border">
+              @for (semana of semanasCalendario; track $index) {
+                <tr>
+                  @for (dia of semana; track $index) {
+                    <td class="h-20 border-e border-border p-2 align-top last:border-e-0">
+                      @if (dia) {
+                        <div class="grid justify-items-center gap-1">
+                          <span class="font-medium text-primary-dark">{{ dia.numero }}</span>
+                          @if (dia.reservas > 0) {
+                            <span class="rounded-full bg-accent/10 px-2 py-0.5 text-xs font-semibold text-accent">
+                              {{ dia.reservas }} {{ dia.reservas === 1 ? 'reserva' : 'reservas' }}
+                            </span>
+                          }
+                        </div>
+                      }
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section
+        class="grid gap-4 rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6"
+        aria-labelledby="titulo-tabla-reservas"
+      >
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 id="titulo-tabla-reservas" class="text-lg font-semibold text-primary-dark">
+              Detalle de reservas
+            </h2>
+            @if (estado === 'vacio') {
+              <p class="mt-1 text-sm text-text-secondary" role="status">
+                No hay resultados para el espacio, período y mes seleccionados.
+              </p>
+            }
+          </div>
+          <app-boton-exportar
+            [datos]="filas"
+            [columnas]="columnasExportacion"
+            nombreArchivo="reporte-reservas"
+            [formatos]="['excel', 'pdf', 'csv']"
+          />
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-border">
+          <table class="w-full min-w-[760px] border-collapse text-left text-sm">
+            <caption class="sr-only">Reservas y tiempo de aprobación por espacio</caption>
+            <thead class="bg-header text-primary-dark">
+              <tr>
+                <th scope="col" class="px-4 py-3 font-semibold">Fecha</th>
+                <th scope="col" class="px-4 py-3 font-semibold">Espacio</th>
+                <th scope="col" class="px-4 py-3 font-semibold">Solicitante</th>
+                <th scope="col" class="px-4 py-3 font-semibold">Estado</th>
+                <th scope="col" class="px-4 py-3 text-right font-semibold">Aprobación (h)</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border text-primary-dark">
+              @for (fila of filas; track fila.reservaId) {
+                <tr class="bg-surface hover:bg-filter">
+                  <td class="px-4 py-3">{{ fila.fecha }}</td>
+                  <td class="px-4 py-3">{{ fila.espacio }}</td>
+                  <td class="px-4 py-3">{{ fila.solicitante }}</td>
+                  <td class="px-4 py-3">{{ fila.estado }}</td>
+                  <td class="px-4 py-3 text-right tabular-nums">
+                    {{ fila.tiempoAprobacionHoras ?? '—' }}
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="5" class="px-4 py-6 text-center text-text-secondary">
+                    No hay datos para mostrar.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+  }
+</main>

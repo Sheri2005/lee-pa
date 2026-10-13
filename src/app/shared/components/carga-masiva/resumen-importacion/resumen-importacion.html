@@ -1,0 +1,47 @@
+<div class="rounded-lg border border-border bg-surface p-5">
+  <h2 class="font-semibold text-primary-dark">Importación finalizada</h2>
+
+  <!-- TEMPORAL: cada tarjeta se reemplaza por <app-tarjeta-indicador> (C5-19, G5) -->
+  <dl class="mt-4 grid gap-3 sm:grid-cols-3">
+    <div class="rounded-md bg-muted p-3">
+      <dt class="text-xs text-text-secondary">Filas leídas</dt>
+      <dd class="text-xl font-semibold text-primary-dark">{{ resumen().total }}</dd>
+    </div>
+    <div class="rounded-md bg-muted p-3">
+      <dt class="text-xs text-text-secondary">Importadas</dt>
+      <dd class="text-xl font-semibold text-primary-dark">{{ resumen().importadas }}</dd>
+    </div>
+    <div class="rounded-md bg-muted p-3">
+      <dt class="text-xs text-text-secondary">Rechazadas</dt>
+      <dd class="text-xl font-semibold text-accent">{{ resumen().rechazadas }}</dd>
+    </div>
+  </dl>
+  <!-- FIN TEMPORAL -->
+
+  @if (resumen().errores.length > 0) {
+    <h3 class="mt-5 text-sm font-semibold text-primary-dark">Filas no importadas</h3>
+    <ul class="mt-2 space-y-1 text-sm">
+      @for (e of resumen().errores; track e.fila) {
+        <li class="text-text-secondary">
+          <span class="font-medium text-primary-dark">Fila {{ e.fila }}:</span> {{ e.mensaje }}
+        </li>
+      }
+    </ul>
+  }
+
+  <div class="mt-5 flex flex-wrap items-center gap-4">
+    <button
+      type="button"
+      class="rounded-md border border-primary px-4 py-2 font-medium text-primary hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      (click)="nuevaCarga.emit()"
+    >
+      Cargar otro archivo
+    </button>
+    <a
+      routerLink="/gestion/carga-masiva/bitacora"
+      class="text-sm font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-primary"
+    >
+      Ver bitácora de importaciones
+    </a>
+  </div>
+</div>

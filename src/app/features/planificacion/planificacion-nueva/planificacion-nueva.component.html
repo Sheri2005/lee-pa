@@ -1,0 +1,144 @@
+<dialog
+  #dialogo
+  class="m-auto w-[min(32rem,calc(100%-2rem))] rounded-lg border border-border bg-surface p-0 text-primary-dark shadow-xl backdrop:bg-black/40"
+  [attr.aria-labelledby]="idTitulo"
+  (cancel)="alPresionarEsc($event)"
+  (click)="alClickFondo($event)"
+>
+  <form class="space-y-5 p-6" novalidate (submit)="$event.preventDefault(); crear()">
+    <header>
+      <h2 [id]="idTitulo" class="m-0 text-lg font-semibold">Nueva planificación</h2>
+      <p class="mt-1 text-sm text-text-secondary">
+        Elige la carrera y el período. Se creará en estado Borrador con la malla vigente de la
+        carrera.
+      </p>
+    </header>
+
+    @switch (vista().tipo) {
+      @case ('cargando') {
+        <app-spinner-carga tipo="esqueleto" [filas]="3" mensaje="Cargando carreras y períodos…" />
+      }
+      @case ('error') {
+        <div class="space-y-3 rounded-lg border border-border bg-muted p-4">
+          <p role="alert" class="text-sm text-primary-dark">
+            No se pudieron cargar las carreras y los períodos.
+          </p>
+          <button
+            type="button"
+            class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            (click)="reintentar()"
+          >
+            Reintentar
+          </button>
+        </div>
+      }
+      @case ('listo') {
+        <div class="space-y-4">
+          <!-- EDITAR (C1-25): reemplazar por <app-selector-carrera (carreraChange)="..." /> -->
+          <div>
+            <label [for]="idCarrera" class="block text-sm font-medium text-primary-dark"
+              >Carrera</label
+            >
+            <select
+              [id]="idCarrera"
+              class="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-primary-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+              [disabled]="guardando()"
+              (change)="alCambiarCarrera($any($event.target).value)"
+            >
+              <option value="" [selected]="carreraId() === null">Selecciona una carrera</option>
+              @for (carrera of carreras(); track carrera.id) {
+                <option [value]="carrera.id" [selected]="carreraId() === carrera.id">
+                  {{ carrera.nombre }}
+                </option>
+              }
+            </select>
+          </div>
+
+          <!-- EDITAR (C1-28): reemplazar por <app-selector-periodo (periodoChange)="..." /> -->
+          <div>
+            <label [for]="idPeriodo" class="block text-sm font-medium text-primary-dark"
+              >Período</label
+            >
+            <select
+              [id]="idPeriodo"
+              class="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-primary-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+              [disabled]="guardando()"
+              [attr.aria-invalid]="duplicada() ? 'true' : null"
+              [attr.aria-describedby]="duplicada() ? idDuplicada : null"
+              (change)="alCambiarPeriodo($any($event.target).value)"
+            >
+              <option value="" [selected]="periodoId() === null">Selecciona un período</option>
+              @for (periodo of periodos(); track periodo.id) {
+                <option [value]="periodo.id" [selected]="periodoId() === periodo.id">
+                  {{ periodo.codigo }} · {{ periodo.nombre }}
+                </option>
+              }
+            </select>
+          </div>
+
+          @if (duplicada()) {
+            <p
+              [id]="idDuplicada"
+              role="alert"
+              class="rounded-lg border border-accent p-3 text-sm text-accent"
+            >
+              Ya existe una planificación para esta carrera y este período. Elige otra combinación o
+              abre la existente desde el listado.
+            </p>
+          }
+
+          <!-- Datos heredados de la carrera (solo lectura). -->
+          <!-- EDITAR (G1): reemplazar la malla por <app-selector-malla [carreraId]="..." [soloLectura]="true" />
+               cuando G1 lo publique; la facultad se muestra como texto porque se hereda y no se elige. -->
+          <dl
+            class="grid gap-3 rounded-lg border border-border bg-header p-3 sm:grid-cols-2"
+            aria-live="polite"
+          >
+            <div>
+              <dt class="text-xs uppercase tracking-wide text-text-secondary">
+                Facultad (heredada)
+              </dt>
+              <dd class="text-sm font-semibold text-primary-dark">
+                {{ facultad()?.nombre ?? '—' }}
+              </dd>
+            </div>
+            <div>
+              <dt class="text-xs uppercase tracking-wide text-text-secondary">Malla vigente</dt>
+              <dd class="text-sm font-semibold text-primary-dark">
+                @if (malla(); as m) {
+                  {{ m.nombre }} ({{ m.anioInicio }})
+                } @else {
+                  —
+                }
+              </dd>
+            </div>
+          </dl>
+        </div>
+      }
+    }
+
+    @if (errorGuardado()) {
+      <p role="alert" class="rounded-lg border border-accent p-3 text-sm text-accent">
+        {{ errorGuardado() }}
+      </p>
+    }
+
+    <div class="flex justify-end gap-2">
+      <button
+        type="button"
+        class="rounded-md border border-border bg-surface px-4 py-2 text-sm text-primary-dark hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+        [disabled]="guardando()"
+        (click)="cancelar()"
+      >
+        Cancelar
+      </button>
+      <button
+        type="submit"
+        class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+        [disabled]="!puedeCrear()"
+      >
+        {{ guardando() ? 'Creando…' : 'Crear planificación' }}
+      </button>
+    </div>
+  </form>
+</dialog>

@@ -1,0 +1,33 @@
+    <dialog
+      #dialogo
+      class="m-auto w-[min(28rem,calc(100%-2rem))] rounded-lg border border-border bg-surface p-0 text-primary-dark shadow-xl backdrop:bg-black/40"
+      [attr.aria-labelledby]="idTitulo"
+      [attr.aria-describedby]="idMensaje"
+      (cancel)="$event.preventDefault(); responder(false)"
+      (click)="alClickFondo($event)"
+    >
+      <div class="p-6">
+        <h2 [id]="idTitulo" class="m-0 text-lg font-semibold">
+          @if (peligro()) { <span aria-hidden="true">⚠️ </span> }{{ titulo() }}
+        </h2>
+        <p [id]="idMensaje" class="mb-0 mt-2 text-text-secondary">{{ mensaje() }}</p>
+
+        <div class="mt-6 flex justify-end gap-2">
+          <button
+            type="button"
+            class="rounded-md border border-border bg-surface px-4 py-2 text-sm text-primary-dark hover:bg-muted
+                   focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            (click)="responder(false)"
+          >
+            {{ textoCancelar() }}
+          </button>
+          <button
+            type="button"
+            [class]="claseConfirmar()"
+            (click)="responder(true)"
+          >
+            {{ textoConfirmar() }}
+          </button>
+        </div>
+      </div>
+    </dialog>

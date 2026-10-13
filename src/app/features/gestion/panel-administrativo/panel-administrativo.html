@@ -1,0 +1,55 @@
+<section aria-labelledby="panel-titulo" class="mx-auto max-w-6xl px-4 py-6">
+  <!-- TEMPORAL: reemplazar por <app-encabezado-pagina> (C3-23, G3) -->
+  <header class="border-b border-border pb-4">
+    <p class="text-sm text-text-secondary">Gestión / Panel</p>
+    <h1 id="panel-titulo" class="text-2xl font-semibold text-primary-dark">Panel administrativo</h1>
+    <p class="mt-1 text-text-secondary">Resumen de los catálogos del sistema.</p>
+  </header>
+  <!-- FIN TEMPORAL -->
+
+  @if (cargando()) {
+    <p role="status" class="mt-6 text-text-secondary">Cargando indicadores…</p>
+  } @else if (errorCarga()) {
+    <div role="alert" class="mt-6 rounded-md border border-accent bg-muted p-4 text-accent">
+      No se pudieron cargar los indicadores.
+      <button
+        type="button"
+        (click)="cargar()"
+        class="ml-2 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-accent"
+      >
+        Reintentar
+      </button>
+    </div>
+  } @else {
+    <h2 class="sr-only">Indicadores</h2>
+    <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      @for (i of indicadores(); track i.titulo) {
+        <!-- [&>button]:h-full: todas las tarjetas del mismo alto, sin tocar el componente de G5 -->
+        <app-tarjeta-indicador
+          class="block h-full [&>button]:h-full"
+          [titulo]="i.titulo"
+          [valor]="i.valor"
+          [icono]="i.icono"
+          [detalle]="i.detalle"
+          [color]="i.color"
+          (click)="abrir(i, $event)"
+        />
+      }
+    </div>
+
+    <div class="mt-6 grid items-start gap-6 lg:grid-cols-2">
+      <section class="grid gap-4 rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6">
+        <app-grafico
+          tipo="barras"
+          titulo="Carreras activas por facultad"
+          [etiquetas]="etiquetasGrafico()"
+          [series]="seriesGrafico()"
+        />
+      </section>
+
+      <div id="registros-sin-siac" class="scroll-mt-4">
+        <app-registros-sin-siac (irARegistro)="irARegistro($event)" />
+      </div>
+    </div>
+  }
+</section>

@@ -1,0 +1,79 @@
+@let estado = vista();
+
+<section
+  class="space-y-4 rounded-xl border border-border bg-surface p-4"
+  aria-label="Sugerencia de docentes"
+  [attr.aria-busy]="estado.tipo === 'cargando'"
+>
+  <header>
+    <h2 class="text-lg font-semibold text-primary-dark">Docentes sugeridos</h2>
+    <p class="text-sm text-text-secondary">
+      Habilitados, disponibles y sin exceder su carga máxima. Ordenados por menor carga.
+    </p>
+  </header>
+
+  @switch (estado.tipo) {
+    @case ('cargando') {
+      <p role="status" class="rounded-lg bg-muted p-4 text-sm text-text-secondary">
+        Cargando candidatos…
+      </p>
+    }
+    @case ('error') {
+      <div class="space-y-3 rounded-lg border border-border bg-muted p-4">
+        <p role="alert" class="text-sm text-primary-dark">
+          {{ estado.mensaje }}
+        </p>
+        <button
+          type="button"
+          class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          (click)="reintentar()"
+        >
+          Reintentar
+        </button>
+      </div>
+    }
+    @case ('listo') {
+      <p class="text-sm text-text-secondary">
+        {{ estado.datos.paralelo.materia.nombre }} · Paralelo {{ estado.datos.paralelo.codigo }} ·
+        {{ estado.datos.paralelo.horasSemanales }} h/sem
+      </p>
+      <p role="status" class="text-sm font-medium text-brand">
+        Candidatos disponibles: {{ estado.datos.candidatos.length }}
+      </p>
+
+      <ul class="space-y-3">
+        @for (candidato of estado.datos.candidatos; track candidato.docente.id) {
+          <li class="space-y-3 rounded-lg border border-border p-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <h3 class="font-semibold text-primary-dark">
+                {{ candidato.docente.nombres }}
+              </h3>
+              <button
+                type="button"
+                class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                [attr.aria-label]="'Elegir a ' + candidato.docente.nombres"
+                (click)="elegir(candidato.docente.id)"
+              >
+                Elegir docente
+              </button>
+            </div>
+
+            <p class="text-sm text-text-secondary">
+              Otros paralelos: {{ candidato.cargaSinParalelo }} h/sem. Carga proyectada al incluir
+              este paralelo:
+            </p>
+            <app-indicador-carga-docente
+              [asignadas]="candidato.cargaProyectada"
+              [maxima]="candidato.docente.cargaMaxima"
+            />
+            <app-justificacion-regla [criterios]="criterios(candidato)" [compacto]="false" />
+          </li>
+        } @empty {
+          <li class="rounded-lg bg-muted p-4 text-sm text-text-secondary">
+            No hay docentes que cumplan todas las condiciones para este paralelo.
+          </li>
+        }
+      </ul>
+    }
+  }
+</section>

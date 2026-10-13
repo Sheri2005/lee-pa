@@ -1,0 +1,46 @@
+.shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.barra-superior {
+  padding: 15px 20px;
+}
+
+.contenido {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.menu-lateral {
+  width: 256px;
+  flex-shrink: 0;
+  transition: width 0.2s ease;
+}
+
+.menu-lateral.menu-colapsado {
+  width: 64px;
+}
+
+.principal {
+  flex: 1;
+  min-width: 0;
+  padding: 20px;
+}
+
+.pie {
+  padding: 15px;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .contenido {
+    position: relative;
+  }
+
+  .principal {
+    width: 100%;
+  }
+}

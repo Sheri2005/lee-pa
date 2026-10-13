@@ -1,0 +1,51 @@
+<section
+  class="w-full space-y-2 rounded-lg border border-slate-200 bg-white p-3"
+  aria-label="Carga docente"
+>
+  <div class="flex flex-wrap items-center justify-between gap-2">
+    <span class="text-sm font-medium text-slate-700">Carga docente</span>
+    @if (datosValidos()) {
+      <span class="text-sm font-semibold tabular-nums text-slate-900">
+        {{ formatear(asignadas()) }} / {{ formatear(maxima()) }} h
+      </span>
+    }
+  </div>
+
+  @if (datosValidos()) {
+    <div
+      class="h-2.5 w-full overflow-hidden rounded-full bg-slate-200"
+      role="progressbar"
+      aria-label="Porcentaje de carga docente"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      [attr.aria-valuenow]="anchoBarra()"
+      [attr.aria-valuetext]="etiquetaAccesible()"
+    >
+      <div
+        class="h-full rounded-full transition-[width] duration-300 motion-reduce:transition-none"
+        [class.bg-emerald-600]="!sobrecarga() && !alLimite()"
+        [class.bg-amber-500]="alLimite()"
+        [class.bg-red-600]="sobrecarga()"
+        [style.width.%]="anchoBarra()"
+      ></div>
+    </div>
+
+    <div class="flex flex-wrap items-start justify-between gap-2 text-xs">
+      <p
+        class="font-medium"
+        [class.text-slate-600]="!sobrecarga() && !alLimite()"
+        [class.text-amber-800]="alLimite()"
+        [class.text-red-700]="sobrecarga()"
+      >
+        {{ mensaje() }}
+      </p>
+      <span class="font-semibold tabular-nums text-slate-700">
+        {{ formatear(porcentaje()) }} %
+      </span>
+    </div>
+  } @else {
+    <p class="rounded-md bg-slate-100 p-2 text-sm text-slate-700">
+      {{ mensaje() }}
+    </p>
+  }
+</section>

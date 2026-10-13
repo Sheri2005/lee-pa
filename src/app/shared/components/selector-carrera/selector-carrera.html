@@ -1,0 +1,30 @@
+<div class="flex flex-col gap-1">
+  <label [for]="idCampo" class="text-sm font-medium text-text-secondary">Carrera</label>
+
+  <select
+    #sel
+    [id]="idCampo"
+    [disabled]="cargando() || error()"
+    (change)="alCambiar(sel.value)"
+    class="rounded-md border border-border bg-surface px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-primary disabled:bg-muted disabled:text-text-secondary"
+  >
+    @if (cargando()) {
+      <option value="">Cargando carreras…</option>
+    } @else if (permitirTodas()) {
+      <option value="" [selected]="valor() === ''">Todas</option>
+    } @else {
+      <option value="" disabled [selected]="valor() === ''">Selecciona una carrera</option>
+    }
+    @for (c of carreras(); track c.id) {
+      <option [value]="c.id" [selected]="valor() === '' + c.id">{{ c.codigo }} · {{ c.nombre }}</option>
+    }
+  </select>
+
+  @if (error()) {
+    <p role="alert" class="text-xs text-accent">No se pudieron cargar las carreras.</p>
+  } @else if (!cargando() && carreras().length === 0) {
+    <p class="text-xs text-text-secondary">
+      {{ soloMias() ? 'No coordinas ninguna carrera activa.' : 'No hay carreras activas para este filtro.' }}
+    </p>
+  }
+</div>

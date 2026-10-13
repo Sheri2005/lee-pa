@@ -1,0 +1,124 @@
+<section class="grid gap-5 rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6">
+  <header class="grid gap-1">
+    <h2 id="titulo-filtros-reporte" class="text-lg font-semibold text-primary-dark">
+      Filtros del reporte
+    </h2>
+    <p class="text-sm text-text-secondary">
+      Selecciona los criterios que quieres aplicar. Puedes dejar cualquier filtro sin seleccionar.
+    </p>
+  </header>
+
+  <form
+    class="grid gap-5"
+    aria-labelledby="titulo-filtros-reporte"
+    (submit)="aplicarFiltros($event)"
+  >
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div class="grid content-start gap-1.5">
+        <label for="facultadId" class="text-sm font-medium text-primary-dark">
+          Facultad
+        </label>
+        <select
+          id="facultadId"
+          [value]="filtros.facultadId ?? ''"
+          class="w-full rounded-lg border border-border bg-filter px-3 py-2.5 text-sm text-primary-dark outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+          (change)="alCambiarFacultad($event)"
+        >
+          <option value="">Todas las facultades</option>
+          @for (facultad of facultades; track facultad.id) {
+            <option [value]="facultad.id">{{ facultad.nombre }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="grid content-start gap-1.5">
+        <label for="carreraId" class="text-sm font-medium text-primary-dark">
+          Carrera
+        </label>
+        <select
+          id="carreraId"
+          [value]="filtros.carreraId ?? ''"
+          [disabled]="carreraDeshabilitada"
+          class="w-full rounded-lg border border-border bg-filter px-3 py-2.5 text-sm text-primary-dark outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed disabled:bg-muted disabled:text-text-secondary"
+          (change)="alCambiarCarrera($event)"
+        >
+          <option value="">Todas las carreras</option>
+          @for (carrera of carrerasDisponibles; track carrera.id) {
+            <option [value]="carrera.id">{{ carrera.nombre }}</option>
+          }
+        </select>
+        @if (filtros.facultadId && carrerasDisponibles.length === 0) {
+          <p class="text-xs text-text-secondary" role="status">
+            Esta facultad no tiene carreras disponibles.
+          </p>
+        }
+      </div>
+
+      <div class="grid content-start gap-1.5">
+        <label for="periodoId" class="text-sm font-medium text-primary-dark">
+          Período
+        </label>
+        <select
+          id="periodoId"
+          [value]="filtros.periodoId ?? ''"
+          class="w-full rounded-lg border border-border bg-filter px-3 py-2.5 text-sm text-primary-dark outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+          (change)="alCambiarPeriodo($event)"
+        >
+          <option value="">Todos los períodos</option>
+          @for (periodo of periodos; track periodo.id) {
+            <option [value]="periodo.id">{{ periodo.nombre }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="grid content-start gap-1.5">
+        <label for="fechaInicio" class="text-sm font-medium text-primary-dark">
+          Desde
+        </label>
+        <input
+          id="fechaInicio"
+          type="date"
+          [value]="filtros.fechaInicio ?? ''"
+          class="w-full rounded-lg border border-border bg-filter px-3 py-2.5 text-sm text-primary-dark outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+          (input)="alCambiarFechaInicio($event)"
+        />
+      </div>
+
+      <div class="grid content-start gap-1.5">
+        <label for="fechaFin" class="text-sm font-medium text-primary-dark">
+          Hasta
+        </label>
+        <input
+          id="fechaFin"
+          type="date"
+          [value]="filtros.fechaFin ?? ''"
+          class="w-full rounded-lg border border-border bg-filter px-3 py-2.5 text-sm text-primary-dark outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+          (input)="alCambiarFechaFin($event)"
+        />
+      </div>
+    </div>
+
+    @if (rangoFechasInvalido) {
+      <p class="-mt-2 text-sm text-red-700" role="alert">
+        La fecha inicial no puede ser posterior a la fecha final.
+      </p>
+    }
+
+    <div class="flex flex-wrap items-center justify-end gap-3 border-t border-border pt-4">
+      <button
+        id="limpiar-filtros"
+        type="button"
+        class="rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-primary-dark transition hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        (click)="limpiarFiltros()"
+      >
+        Limpiar
+      </button>
+      <button
+        type="submit"
+        class="rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      >
+        Aplicar filtros
+      </button>
+    </div>
+  </form>
+</section>

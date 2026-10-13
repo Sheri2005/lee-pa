@@ -1,0 +1,27 @@
+<div class="max-w-4xl mx-auto p-6 bg-surface rounded-xl shadow-md border border-border">
+  <h2 class="text-2xl font-bold text-primary mb-6">Listado de Docentes</h2>
+  <div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse text-sm">
+      <thead>
+        <tr class="border-b border-border text-gray-600">
+          <th class="py-3 px-4">Cédula</th>
+          <th class="py-3 px-4">Nombre</th>
+          <th class="py-3 px-4">Departamento</th>
+          <th class="py-3 px-4">Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (doc of docentes; track doc.id) {
+          <tr class="border-b border-border hover:bg-gray-50 transition-colors">
+            <td class="py-3 px-4 font-semibold">{{ doc.cedula }}</td>
+            <td class="py-3 px-4">{{ doc.nombre }}</td>
+            <td class="py-3 px-4">{{ doc.departamento }}</td>
+            <td class="py-3 px-4">
+              <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-green-50 text-green-700">{{ doc.estado }}</span>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

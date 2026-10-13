@@ -1,0 +1,97 @@
+<section class="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
+  <header
+    class="flex flex-wrap items-center justify-between gap-4 border-b border-border bg-header px-5 py-4"
+  >
+    <div>
+      <h2 class="text-lg font-semibold text-primary-dark">
+        Vista previa de exportación
+      </h2>
+
+      <p class="mt-1 text-sm text-text-secondary">
+        Revisa el contenido antes de descargar los archivos para SIAC 1.0.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50"
+      [disabled]="sinContenido()"
+      (click)="descargar()"
+    >
+      <svg
+        class="h-4 w-4"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        aria-hidden="true"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"
+        />
+      </svg>
+
+      {{ etiquetaDescarga() }}
+    </button>
+  </header>
+
+  <div class="border-b border-border px-5 pt-4">
+    <div
+      class="inline-flex rounded-lg border border-border bg-muted p-1"
+      role="tablist"
+      aria-label="Formato de vista previa"
+    >
+      <button
+        type="button"
+        role="tab"
+        class="rounded-md px-4 py-2 text-sm font-medium transition-colors"
+        [class.bg-primary]="formatoActivo() === 'json'"
+        [class.text-white]="formatoActivo() === 'json'"
+        [class.text-text-secondary]="formatoActivo() !== 'json'"
+        [attr.aria-selected]="formatoActivo() === 'json'"
+        (click)="cambiarFormato('json')"
+      >
+        JSON
+      </button>
+
+      <button
+        type="button"
+        role="tab"
+        class="rounded-md px-4 py-2 text-sm font-medium transition-colors"
+        [class.bg-primary]="formatoActivo() === 'csv'"
+        [class.text-white]="formatoActivo() === 'csv'"
+        [class.text-text-secondary]="formatoActivo() !== 'csv'"
+        [attr.aria-selected]="formatoActivo() === 'csv'"
+        (click)="cambiarFormato('csv')"
+      >
+        CSV
+      </button>
+    </div>
+  </div>
+
+  <div class="p-5">
+    @if (sinContenido()) {
+      <div
+        class="rounded-lg border border-border bg-muted px-4 py-8 text-center"
+      >
+        <p class="text-sm font-medium text-primary-dark">
+          No hay información disponible para mostrar.
+        </p>
+
+        <p class="mt-1 text-sm text-text-secondary">
+          Genera una exportación para visualizar su contenido.
+        </p>
+      </div>
+    } @else {
+      <div
+        class="max-h-[32rem] overflow-auto rounded-lg border border-border bg-background"
+      >
+        <pre
+          class="min-w-max whitespace-pre p-4 font-mono text-sm leading-6 text-primary-dark"
+        ><code>{{ contenidoActual() }}</code></pre>
+      </div>
+    }
+  </div>
+</section>

@@ -1,0 +1,249 @@
+@let estado = vista();
+
+<!-- Colores: tokens de src/styles.css (ver TAILWIND-Y-COLORES.md) -->
+<section
+  class="space-y-4 rounded-xl border border-border bg-surface p-4"
+  aria-label="Materias compartidas"
+  [attr.aria-busy]="estado.tipo === 'cargando'"
+>
+  <header>
+    <h2 class="text-lg font-semibold text-primary-dark">Materias compartidas</h2>
+    <p class="text-sm text-text-secondary">
+      Materias de tu malla que apertura otra carrera. No se planifican aquí: se solicitan cupos
+      en los paralelos que abra la carrera responsable.
+    </p>
+  </header>
+
+  @if (ultimoAviso(); as aviso) {
+    <p role="status" class="rounded-lg border border-border bg-muted px-4 py-3 text-sm text-primary-dark">
+      {{ aviso }}
+    </p>
+  }
+
+  @if (errorAccion(); as mensaje) {
+    <p role="alert" class="rounded-lg border border-accent/40 bg-muted px-4 py-3 text-sm text-primary-dark">
+      {{ mensaje }}
+    </p>
+  }
+
+  @switch (estado.tipo) {
+    @case ('cargando') {
+      <app-spinner-carga tipo="esqueleto" [filas]="4" mensaje="Cargando materias compartidas…" />
+    }
+    @case ('error') {
+      <div class="space-y-3 rounded-lg border border-border bg-muted p-4">
+        <p role="alert" class="text-sm text-primary-dark">
+          No se pudieron cargar las materias compartidas. Verifica la planificación e intenta
+          nuevamente.
+        </p>
+        <button
+          type="button"
+          class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          (click)="reintentar()"
+        >
+          Reintentar
+        </button>
+      </div>
+    }
+    @case ('listo') {
+      @if (materias().length === 0) {
+        <app-estado-vacio
+          icono="🤝"
+          mensaje="La malla de esta carrera no tiene materias compartidas."
+        />
+      } @else {
+        <!-- Advertencia de la HU G2-08: la responsable aún no planificó alguna materia -->
+        @if (sinPlanificar().length > 0) {
+          <p
+            role="note"
+            class="rounded-lg border border-accent-gold/40 bg-accent-gold/10 px-4 py-3 text-sm text-primary-dark"
+          >
+            <strong>{{ sinPlanificar().length }} materia(s) sin planificar todavía.</strong>
+            Hasta que la carrera responsable las planifique y abra paralelos no se pueden pedir
+            cupos. Conviene avisarle antes de cerrar tu planificación.
+          </p>
+        }
+
+        <!-- EDITAR (C4-20): cuando G4 publique app-tabla-datos, esta tabla se reemplaza por ese
+             componente (columnas configurables). Mientras tanto es una tabla simple. -->
+        <div class="overflow-x-auto rounded-lg border border-border md:overflow-visible">
+          <table class="w-full border-collapse text-left text-sm">
+            <caption class="sr-only">
+              Materias compartidas de {{ carreraNombre() }}, con el estado de la carrera
+              responsable y los cupos solicitados
+            </caption>
+            <thead class="bg-table-header text-brand">
+              <tr>
+                <th scope="col" class="px-4 py-2 font-semibold">Código</th>
+                <th scope="col" class="px-4 py-2 font-semibold">Materia</th>
+                <th scope="col" class="px-4 py-2 font-semibold">Nivel</th>
+                <th scope="col" class="px-4 py-2 font-semibold">Responsable</th>
+                <th scope="col" class="px-4 py-2 font-semibold">Estado</th>
+                <th scope="col" class="px-4 py-2 font-semibold">Paralelos abiertos</th>
+                <th scope="col" class="px-4 py-2 font-semibold">Cupos</th>
+                <th scope="col" class="px-4 py-2 font-semibold">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (m of materias(); track m.materia.id) {
+                <tr class="border-b border-border align-top hover:bg-muted">
+                  <td class="whitespace-nowrap px-4 py-3 font-medium text-primary-dark">
+                    {{ m.materia.codigo }}
+                  </td>
+                  <td class="px-4 py-3 text-primary-dark">{{ m.materia.nombre }}</td>
+                  <td class="px-4 py-3 text-text-secondary">
+                    @if (m.nivel !== null) {
+                      {{ m.nivel }}
+                    } @else {
+                      <span aria-hidden="true">—</span><span class="sr-only">No aplica</span>
+                    }
+                  </td>
+                  <td class="whitespace-nowrap px-4 py-3">
+                    <app-indicador-materia-compartida
+                      [materia]="m.materia"
+                      [carreraActualId]="carreraId()"
+                      [carrerasQueLaUsan]="m.carrerasQueLaUsan"
+                    />
+                  </td>
+                  <!-- EDITAR (C5-08): reemplazar por app-estado-badge cuando G5 lo publique -->
+                  <td class="whitespace-nowrap px-4 py-3">
+                    <span [class]="clasesEstado[m.estadoResponsable]">
+                      {{ etiquetasEstado[m.estadoResponsable] }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-text-secondary">
+                    @if (m.paralelosAbiertos.length === 0) {
+                      <span class="italic">Ninguno todavía</span>
+                    } @else {
+                      <ul class="space-y-0.5">
+                        @for (p of m.paralelosAbiertos; track p.id) {
+                          <li>
+                            <span class="font-medium text-primary-dark">{{ p.codigo }}</span>
+                            · {{ p.cuposDisponibles }} de {{ p.cupo }} libres
+                            @if (p.docente) {
+                              · {{ p.docente }}
+                            }
+                          </li>
+                        }
+                      </ul>
+                    }
+                  </td>
+                  <td class="whitespace-nowrap px-4 py-3 text-text-secondary">
+                    <span class="font-medium text-primary-dark">{{ cuposSolicitados(m) }}</span>
+                    solicitados
+                    <span class="block text-xs">
+                      de {{ m.estudiantesEstimados }} estimados
+                      @if (cuposFaltantes(m) > 0) {
+                        · faltan {{ cuposFaltantes(m) }}
+                      }
+                    </span>
+                  </td>
+                  <td class="px-4 py-3">
+                    @if (puedeSolicitar(m)) {
+                      <button
+                        type="button"
+                        class="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+                        [disabled]="enviando()"
+                        (click)="abrirFormulario(m)"
+                      >
+                        Solicitar cupos
+                      </button>
+                    } @else if (m.estadoResponsable !== 'PLANIFICADA') {
+                      <span class="text-xs text-text-secondary">
+                        Esperando a {{ m.materia.carreraResponsable }}
+                      </span>
+                    } @else {
+                      <span class="text-xs text-text-secondary">Sin cupos disponibles</span>
+                    }
+                  </td>
+                </tr>
+
+                <!-- EDITAR (C2-18): formulario provisional; reemplazar por app-solicitud-cupos-form -->
+                @if (materiaAbierta() === m.materia.id) {
+                  <tr class="border-b border-border bg-header">
+                    <td colspan="8" class="px-4 py-3">
+                      <form
+                        class="flex flex-wrap items-end gap-3"
+                        (submit)="
+                          $event.preventDefault();
+                          solicitar(m, paraleloElegido.value, cuposPedidos.value)
+                        "
+                      >
+                        <div>
+                          <label
+                            class="block text-xs font-medium text-primary-dark"
+                            [attr.for]="'paralelo-' + m.materia.id"
+                          >
+                            Paralelo
+                          </label>
+                          <select
+                            #paraleloElegido
+                            [id]="'paralelo-' + m.materia.id"
+                            class="mt-1 rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-primary-dark focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                          >
+                            @for (p of paralelosConCupo(m); track p.id) {
+                              <option [value]="p.id">
+                                {{ p.codigo }} — {{ p.cuposDisponibles }} cupos libres
+                              </option>
+                            }
+                          </select>
+                        </div>
+
+                        <div>
+                          <label
+                            class="block text-xs font-medium text-primary-dark"
+                            [attr.for]="'cupos-' + m.materia.id"
+                          >
+                            Cupos que necesitas
+                          </label>
+                          <input
+                            #cuposPedidos
+                            type="number"
+                            [id]="'cupos-' + m.materia.id"
+                            class="mt-1 w-32 rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-primary-dark focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                            [value]="cuposSugeridos(m)"
+                            min="1"
+                            [max]="maximoCupos"
+                            step="1"
+                            inputmode="numeric"
+                          />
+                        </div>
+
+                        <button
+                          type="submit"
+                          class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+                          [disabled]="enviando()"
+                        >
+                          {{ enviando() ? 'Enviando…' : 'Enviar solicitud' }}
+                        </button>
+                        <button
+                          type="button"
+                          class="rounded-md border border-border px-4 py-2 text-sm font-medium text-primary hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                          (click)="cerrarFormulario()"
+                        >
+                          Cancelar
+                        </button>
+                      </form>
+
+                      @if (m.solicitudes.length > 0) {
+                        <p class="mt-2 text-xs text-text-secondary">
+                          Ya registradas:
+                          @for (s of m.solicitudes; track s.id) {
+                            <span>{{ s.cupos }} cupos ({{ etiquetasSolicitud[s.estado] }})</span>
+                            @if (!$last) {
+                              <span>, </span>
+                            }
+                          }
+                        </p>
+                      }
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+  }
+</section>

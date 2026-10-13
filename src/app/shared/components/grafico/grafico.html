@@ -1,0 +1,48 @@
+<figure class="m-0 grid min-w-0 gap-3">
+  @if (titulo) {
+    <figcaption class="text-base font-semibold text-primary-dark">{{ titulo }}</figcaption>
+  }
+
+  @if (mensajeEstado) {
+    <p
+      class="grid min-h-48 place-items-center rounded-xl border border-dashed border-border p-4 text-center text-text-secondary"
+      role="status"
+    >
+      {{ mensajeEstado }}
+    </p>
+  } @else {
+    <div class="relative h-80 min-w-0 w-full">
+      <canvas
+        #canvas
+        role="img"
+        [attr.aria-label]="(titulo || 'Datos') + ', ' + tipoAccesible"
+      ></canvas>
+    </div>
+
+    <table class="sr-only">
+      <caption>
+        {{
+          titulo || 'Datos del ' + tipoAccesible
+        }}
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">Categoría</th>
+          @for (serie of series; track $index) {
+            <th scope="col">{{ serie.nombre }}</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (etiqueta of etiquetas; track $index; let i = $index) {
+          <tr>
+            <th scope="row">{{ etiqueta }}</th>
+            @for (serie of series; track $index) {
+              <td>{{ valorEn(i, serie) }}</td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</figure>

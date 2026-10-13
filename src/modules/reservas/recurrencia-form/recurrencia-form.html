@@ -1,0 +1,148 @@
+<div
+  role="group"
+  [attr.aria-labelledby]="id + '-titulo'"
+  class="min-w-0 rounded-xl border border-border bg-surface shadow-sm"
+>
+  <div class="flex items-center gap-2.5 border-b border-border px-5 py-3.5">
+    <span class="size-1.5 rounded-[1px] bg-accent-gold" aria-hidden="true"></span>
+    <h3 [id]="id + '-titulo'" class="text-[15px] font-semibold text-primary-dark">
+      Repetir cada semana
+    </h3>
+  </div>
+
+  <div class="px-5 py-4">
+    <div class="flex flex-col gap-4">
+      <div>
+        <p [id]="id + '-dias'" class="mb-2 text-sm font-medium text-primary-dark">
+          Días de la semana
+        </p>
+        <div class="flex flex-wrap gap-2" role="group" [attr.aria-labelledby]="id + '-dias'">
+          @for (dia of opciones(); track dia.valor) {
+            <button
+              type="button"
+              class="min-h-11 min-w-14 rounded-full border px-3 text-sm font-medium transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary active:scale-95"
+              [class]="
+                dias().includes(dia.valor)
+                  ? 'border-primary bg-primary text-white shadow-md shadow-primary/25 hover:bg-accent'
+                  : 'border-border bg-surface text-primary-dark hover:-translate-y-0.5 hover:border-primary/40 hover:bg-muted hover:text-primary hover:shadow-sm'
+              "
+              [attr.aria-pressed]="dias().includes(dia.valor)"
+              [attr.aria-label]="dia.nombre"
+              (click)="alternarDia(dia.valor)"
+            >
+              {{ dia.corto }}
+            </button>
+          }
+        </div>
+      </div>
+
+      @if (fechaInicio()) {
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div class="flex min-w-0 flex-col gap-1.5">
+            <span class="text-sm font-medium text-primary-dark">Empieza</span>
+            <span
+              class="flex min-h-11 items-center gap-2 rounded-lg border border-border bg-muted px-3 text-primary-dark"
+            >
+              <svg
+                class="size-[18px] shrink-0 text-primary"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+                <path d="M3.5 9.5h17M8 3v4M16 3v4" />
+              </svg>
+              <span class="font-medium">{{ fechaLegible(fechaInicio()) }}</span>
+              <span class="text-xs text-text-secondary">· fecha de la reserva</span>
+            </span>
+          </div>
+          <div class="flex min-w-0 flex-col gap-1.5">
+            <label class="text-sm font-medium text-primary-dark" [for]="id + '-hasta'">
+              Repetir hasta
+            </label>
+            <app-campo-fecha
+              nombre="hasta"
+              nombreExtremo="Inicio"
+              [idCampo]="id + '-hasta'"
+              [min]="fechaInicio()"
+              [max]="hastaMaximo()"
+              [otroExtremo]="fechaInicio()"
+              [valor]="hasta()"
+              [invalido]="mostrarError()"
+              (valorChange)="cambiarHasta($event)"
+            />
+          </div>
+        </div>
+      } @else {
+        <app-selector-rango-fechas
+          etiqueta="Fechas de la serie"
+          [enmarcado]="false"
+          [mostrarResumen]="false"
+          [fechaMin]="fechaMin()"
+          [desde]="desde()"
+          [hasta]="hasta()"
+          [periodos]="periodos()"
+          [fechaReferencia]="fechaReferencia()"
+          (desdeChange)="cambiarDesde($event)"
+          (hastaChange)="cambiarHasta($event)"
+        />
+      }
+    </div>
+
+    @if (mostrarError()) {
+      <p
+        class="mt-4 flex items-start gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700 transition duration-200 starting:-translate-y-1 starting:opacity-0"
+        role="alert"
+      >
+        <svg
+          class="mt-0.5 size-4 shrink-0"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 7.5v5M12 16h.01" />
+        </svg>
+        {{ error() }}
+      </p>
+    } @else if (fechas().length) {
+      <div
+        class="mt-4 flex items-start gap-3 rounded-xl bg-muted px-4 py-3 text-sm transition duration-200 starting:-translate-y-1 starting:opacity-0"
+        aria-live="polite"
+      >
+        <span
+          class="grid size-8 shrink-0 place-items-center rounded-full bg-surface text-primary shadow-xs"
+        >
+          <svg
+            class="size-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path
+              d="M17 2.5 21 6.5l-4 4M3 11.5v-1a4 4 0 0 1 4-4h14M7 21.5l-4-4 4-4M21 12.5v1a4 4 0 0 1-4 4H3"
+            />
+          </svg>
+        </span>
+        <span>
+          <span class="block font-semibold text-primary-dark">
+            {{ fechas().length }} {{ fechas().length === 1 ? 'reserva' : 'reservas' }}
+          </span>
+          <span class="mt-0.5 block text-text-secondary">{{ resumenFechas() }}</span>
+        </span>
+      </div>
+    }
+  </div>
+</div>

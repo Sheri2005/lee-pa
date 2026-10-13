@@ -1,0 +1,52 @@
+<section aria-labelledby="carga-masiva-titulo" class="mx-auto max-w-6xl px-4 py-6">
+  <!-- TEMPORAL: reemplazar por <app-encabezado-pagina> (C3-23, G3) -->
+  <header class="flex flex-wrap items-end justify-between gap-4 border-b border-border pb-4">
+    <div>
+      <p class="text-sm text-text-secondary">Gestión / Carga masiva</p>
+      <h1 id="carga-masiva-titulo" class="text-2xl font-semibold text-primary-dark">Carga masiva</h1>
+      <p class="mt-1 text-text-secondary">
+        Elige qué quieres importar y sigue los pasos con la plantilla correspondiente.
+      </p>
+    </div>
+    <a
+      routerLink="/gestion/carga-masiva/bitacora"
+      class="rounded-md border border-primary px-4 py-2 font-medium text-primary hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+    >
+      Ver bitácora
+    </a>
+  </header>
+  <!-- FIN TEMPORAL -->
+
+  <fieldset class="mt-4">
+    <legend class="text-sm font-medium text-text-secondary">¿Qué quieres importar?</legend>
+    <div class="mt-2 flex flex-wrap gap-2">
+      @for (p of plantillas; track p.nombreArchivo) {
+        <label
+          class="has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-primary"
+          [class]="
+            p === plantilla()
+              ? 'cursor-pointer rounded-md border border-primary bg-primary px-4 py-2 text-sm font-medium text-white'
+              : 'cursor-pointer rounded-md border border-border bg-surface px-4 py-2 text-sm hover:bg-muted'
+          "
+        >
+          <input
+            type="radio"
+            name="entidad"
+            class="sr-only"
+            [checked]="p === plantilla()"
+            (change)="elegir(p)"
+          />
+          {{ p.nombre }}
+        </label>
+      }
+    </div>
+  </fieldset>
+
+  <!-- El @for con un solo elemento vuelve a crear el asistente al cambiar de entidad,
+       para que no se mezclen archivos ni pasos de otra plantilla. -->
+  <div class="mt-6">
+    @for (p of [plantilla()]; track p.nombreArchivo) {
+      <app-carga-masiva [config]="p" />
+    }
+  </div>
+</section>

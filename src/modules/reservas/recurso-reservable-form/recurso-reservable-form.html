@@ -1,0 +1,198 @@
+<div
+  class="fixed inset-0 z-50 grid place-items-center bg-wine-deep/40 p-4 backdrop-blur-[2px] transition-opacity duration-200 starting:opacity-0"
+>
+  <div
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="id + '-titulo'"
+    class="w-full max-w-lg overflow-hidden rounded-2xl border border-border bg-surface text-primary-dark shadow-2xl shadow-wine-deep/20 transition duration-300 ease-out starting:translate-y-4 starting:scale-95 starting:opacity-0"
+  >
+    <header class="flex items-start justify-between gap-4 border-b border-border px-6 py-4">
+      <div>
+        <div class="flex items-center gap-2.5">
+          <span class="size-1.5 rounded-[1px] bg-accent-gold" aria-hidden="true"></span>
+          <h2 [id]="id + '-titulo'" class="text-[17px] font-semibold tracking-tight">
+            {{ editando() ? 'Editar recurso reservable' : 'Nuevo recurso reservable' }}
+          </h2>
+        </div>
+        <p class="mt-1 pl-4 text-sm text-text-secondary">
+          Equipo que se presta junto con un espacio, por ejemplo un proyector móvil.
+        </p>
+      </div>
+      <button
+        type="button"
+        class="-mr-2 grid size-9 shrink-0 place-items-center rounded-full text-text-secondary transition-colors hover:bg-muted hover:text-primary focus-visible:outline-2 focus-visible:outline-primary"
+        aria-label="Cerrar"
+        (click)="cancelar.emit()"
+      >
+        <svg
+          class="size-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="m6 6 12 12M6 18 18 6" />
+        </svg>
+      </button>
+    </header>
+
+    <form novalidate (submit)="enviar($event)">
+      <div class="flex flex-col gap-5 px-6 py-5">
+        <div class="flex flex-col gap-1.5">
+          <label class="text-sm font-medium" [for]="id + '-nombre'">Nombre</label>
+          <input
+            #campoNombre
+            type="text"
+            name="nombre"
+            autocomplete="off"
+            placeholder="Por ejemplo: Proyector móvil"
+            [id]="id + '-nombre'"
+            [attr.maxlength]="LONGITUD_MAXIMA_NOMBRE"
+            class="min-h-11 w-full rounded-lg border bg-surface px-3 py-2 shadow-xs transition-[border-color,box-shadow] duration-200 placeholder:text-text-secondary/50 hover:border-primary/40 focus:ring-4 focus:outline-none"
+            [class]="
+              intentado() && errorNombre()
+                ? 'border-red-700 focus:ring-red-700/10'
+                : 'border-border focus:border-primary focus:ring-primary/10'
+            "
+            [value]="nombre()"
+            [attr.aria-invalid]="intentado() && !!errorNombre()"
+            [attr.aria-describedby]="intentado() && errorNombre() ? id + '-error-nombre' : null"
+            (input)="nombre.set(valor($event))"
+          />
+          @if (intentado() && errorNombre()) {
+            <span
+              [id]="id + '-error-nombre'"
+              class="text-sm font-medium text-red-700 transition duration-200 starting:-translate-y-1 starting:opacity-0"
+              >{{ errorNombre() }}</span
+            >
+          }
+        </div>
+
+        <div class="flex flex-col gap-1.5">
+          <label class="text-sm font-medium" [for]="id + '-cantidad'">Cantidad total</label>
+          <div
+            class="flex min-h-11 w-44 items-center rounded-lg border bg-surface shadow-xs transition-[border-color,box-shadow] duration-200 focus-within:ring-4 hover:border-primary/40"
+            [class]="
+              intentado() && errorCantidad()
+                ? 'border-red-700 focus-within:ring-red-700/10'
+                : 'border-border focus-within:border-primary focus-within:ring-primary/10'
+            "
+          >
+            <button
+              type="button"
+              class="grid size-10 shrink-0 place-items-center rounded-l-lg text-primary transition-colors hover:bg-muted disabled:opacity-30"
+              aria-label="Restar una unidad"
+              [disabled]="numeroCantidad() <= 1"
+              (click)="sumarCantidad(-1)"
+            >
+              <svg
+                class="size-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                aria-hidden="true"
+              >
+                <path d="M5 12h14" />
+              </svg>
+            </button>
+            <input
+              #campoCantidad
+              type="text"
+              name="cantidad"
+              inputmode="numeric"
+              autocomplete="off"
+              placeholder="0"
+              [id]="id + '-cantidad'"
+              class="w-full min-w-0 bg-transparent text-center font-medium tabular-nums placeholder:text-text-secondary/50 focus:outline-none"
+              [value]="cantidad()"
+              [attr.aria-invalid]="intentado() && !!errorCantidad()"
+              [attr.aria-describedby]="
+                intentado() && errorCantidad() ? id + '-error-cantidad' : id + '-ayuda-cantidad'
+              "
+              (input)="cantidad.set(valor($event))"
+            />
+            <button
+              type="button"
+              class="grid size-10 shrink-0 place-items-center rounded-r-lg text-primary transition-colors hover:bg-muted disabled:opacity-30"
+              aria-label="Sumar una unidad"
+              [disabled]="numeroCantidad() >= CANTIDAD_MAXIMA"
+              (click)="sumarCantidad(1)"
+            >
+              <svg
+                class="size-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                aria-hidden="true"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </button>
+          </div>
+          @if (intentado() && errorCantidad()) {
+            <span
+              [id]="id + '-error-cantidad'"
+              class="text-sm font-medium text-red-700 transition duration-200 starting:-translate-y-1 starting:opacity-0"
+              >{{ errorCantidad() }}</span
+            >
+          } @else {
+            <span [id]="id + '-ayuda-cantidad'" class="text-xs text-text-secondary">
+              Unidades que tiene la universidad.
+            </span>
+          }
+        </div>
+
+        <div
+          class="flex items-center justify-between gap-4 rounded-xl border border-border bg-header/60 px-4 py-3"
+        >
+          <span>
+            <span [id]="id + '-estado-etiqueta'" class="block text-sm font-medium"
+              >Disponible para reservar</span
+            >
+            <span class="block text-xs text-text-secondary">
+              Si lo desactivas, no aparecerá al solicitar una reserva.
+            </span>
+          </span>
+          <button
+            type="button"
+            role="switch"
+            name="estado"
+            class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            [class]="estado() ? 'bg-primary' : 'bg-text-secondary/30'"
+            [attr.aria-checked]="estado()"
+            [attr.aria-labelledby]="id + '-estado-etiqueta'"
+            (click)="estado.set(!estado())"
+          >
+            <span
+              class="inline-block size-5 rounded-full bg-white shadow-md transition-transform duration-300 ease-out"
+              [class]="estado() ? 'translate-x-6' : 'translate-x-1'"
+            ></span>
+          </button>
+        </div>
+      </div>
+
+      <footer class="flex justify-end gap-2 border-t border-border bg-header/40 px-6 py-4">
+        <button
+          type="button"
+          class="min-h-11 rounded-lg border border-border bg-surface px-5 text-sm font-semibold text-primary transition-colors hover:bg-header focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          (click)="cancelar.emit()"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          class="min-h-11 rounded-lg bg-primary px-5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary active:bg-primary-dark"
+        >
+          {{ editando() ? 'Guardar cambios' : 'Crear recurso' }}
+        </button>
+      </footer>
+    </form>
+  </div>
+</div>

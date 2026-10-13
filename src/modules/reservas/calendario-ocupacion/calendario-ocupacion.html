@@ -1,0 +1,550 @@
+<div class="@container mx-auto w-full max-w-6xl">
+  <!-- TEMPORAL: encabezado sencillo hasta que exista app-encabezado-pagina (G3). -->
+  <header class="mb-6">
+    <h1 class="text-2xl font-semibold tracking-tight text-primary-dark">Ocupación de espacios</h1>
+    <p class="mt-1 max-w-prose text-sm text-text-secondary">
+      Clases y reservas de un espacio, por semana o por mes. Entre una ocupación y otra quedan
+      {{ SEPARACION_MINUTOS }} minutos libres.
+    </p>
+  </header>
+
+  <div class="flex flex-col gap-5">
+    <!-- Filtros -->
+    <section
+      class="min-w-0 rounded-xl border border-border bg-surface shadow-sm"
+      [attr.aria-labelledby]="id + '-filtros-titulo'"
+    >
+      <div class="flex items-center gap-2.5 border-b border-border px-5 py-3.5">
+        <span class="size-1.5 rounded-[1px] bg-accent-gold" aria-hidden="true"></span>
+        <h2 [id]="id + '-filtros-titulo'" class="text-[15px] font-semibold text-primary-dark">
+          Espacio y vista
+        </h2>
+      </div>
+
+      <div class="grid items-end gap-4 px-5 py-4 @2xl:grid-cols-[minmax(0,1fr)_auto]">
+        <div class="flex min-w-0 flex-col gap-1.5">
+          <!-- TEMPORAL: lista de espacios hasta que exista app-selector-espacio (G3). El selector de
+               período académico (app-selector-periodo, G1) se añadirá aquí cuando exista. -->
+          @switch (catalogo().tipo) {
+            @case ('cargando') {
+              <span class="text-sm font-medium text-primary-dark">Espacio</span>
+              <div class="h-11 animate-pulse rounded-lg bg-muted motion-reduce:animate-none"></div>
+            }
+            @case ('listo') {
+              <label class="text-sm font-medium text-primary-dark" [for]="id + '-espacio'"
+                >Espacio</label
+              >
+              <app-campo-seleccion
+                nombre="espacio"
+                vacio="Elegir espacio…"
+                [idCampo]="id + '-espacio'"
+                [opciones]="opcionesEspacio()"
+                [valor]="espacioId() === null ? '' : '' + espacioId()"
+                (valorChange)="elegirEspacio($event)"
+              />
+            }
+            @default {
+              <span class="text-sm font-medium text-primary-dark">Espacio</span>
+              @if (espacioId() !== null) {
+                <p
+                  class="flex min-h-11 items-center rounded-lg border border-border bg-muted px-3 font-medium text-primary-dark tabular-nums"
+                >
+                  Espacio n.º {{ espacioId() }}
+                </p>
+              } @else {
+                <p
+                  class="flex min-h-11 items-center gap-2 rounded-lg bg-muted px-3 text-sm text-text-secondary"
+                  role="status"
+                >
+                  {{
+                    catalogo().tipo === 'error'
+                      ? 'No se pudo cargar la lista de espacios.'
+                      : 'La lista de espacios todavía no está conectada.'
+                  }}
+                </p>
+              }
+            }
+          }
+        </div>
+
+        <div
+          class="inline-flex justify-self-start rounded-full border border-border bg-header p-1 @2xl:justify-self-end"
+          role="group"
+          aria-label="Vista"
+        >
+          @for (opcion of VISTAS; track opcion) {
+            <button
+              type="button"
+              class="min-h-9 rounded-full px-4 text-sm font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary motion-reduce:transition-none"
+              [class]="
+                vista() === opcion
+                  ? 'bg-surface text-primary shadow-sm'
+                  : 'text-text-secondary hover:text-primary'
+              "
+              [attr.aria-pressed]="vista() === opcion"
+              (click)="cambiarVista(opcion)"
+            >
+              {{ opcion === 'semana' ? 'Semana' : 'Mes' }}
+            </button>
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- Calendario -->
+    <section
+      class="@container min-w-0 rounded-xl border border-border bg-surface shadow-sm"
+      [attr.aria-labelledby]="id + '-periodo'"
+    >
+      <div
+        class="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3"
+      >
+        <div class="flex flex-wrap items-center gap-1">
+          <button
+            type="button"
+            class="grid size-10 place-items-center rounded-full text-primary transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary motion-reduce:transition-none"
+            [attr.aria-label]="vista() === 'semana' ? 'Semana anterior' : 'Mes anterior'"
+            (click)="mover(-1)"
+          >
+            <svg
+              class="size-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m15 6-6 6 6 6" />
+            </svg>
+          </button>
+          <h2
+            [id]="id + '-periodo'"
+            class="min-w-0 text-center @sm:min-w-36 text-[15px] font-semibold text-primary-dark tabular-nums"
+            aria-live="polite"
+          >
+            {{ titulo() }}
+          </h2>
+          <button
+            type="button"
+            class="grid size-10 place-items-center rounded-full text-primary transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary motion-reduce:transition-none"
+            [attr.aria-label]="vista() === 'semana' ? 'Semana siguiente' : 'Mes siguiente'"
+            (click)="mover(1)"
+          >
+            <svg
+              class="size-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m9 6 6 6-6 6" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="ml-1 min-h-9 rounded-full border border-border px-3.5 text-sm font-semibold text-primary transition-colors hover:border-primary/40 hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-default disabled:opacity-40 disabled:hover:border-border disabled:hover:bg-transparent motion-reduce:transition-none"
+            [disabled]="enPeriodoActual()"
+            (click)="irAHoy()"
+          >
+            Hoy
+          </button>
+        </div>
+
+        <ul class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-text-secondary">
+          <li class="flex items-center gap-1.5">
+            <span class="h-3 w-4 rounded-[3px] bg-primary" aria-hidden="true"></span>Clase
+          </li>
+          <li class="flex items-center gap-1.5">
+            <span
+              class="h-3 w-4 rounded-[3px] bg-[color-mix(in_oklab,var(--color-accent-gold)_45%,var(--color-surface))]"
+              aria-hidden="true"
+            ></span
+            >Reserva aprobada
+          </li>
+          <li class="flex items-center gap-1.5">
+            <span
+              class="h-3 w-4 rounded-[3px] border border-dashed border-accent-gold bg-surface"
+              aria-hidden="true"
+            ></span
+            >Reserva pendiente
+          </li>
+        </ul>
+      </div>
+
+      <div class="px-5 py-4">
+        @switch (estado().tipo) {
+          @case ('sin-espacio') {
+            <p
+              class="flex items-center gap-3 rounded-xl bg-muted px-4 py-3 text-sm text-text-secondary"
+            >
+              <svg
+                class="size-4 shrink-0 text-primary"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M4 20V9l8-5 8 5v11M9 20v-6h6v6" />
+              </svg>
+              Elige un espacio para ver sus clases y reservas.
+            </p>
+          }
+          @case ('cargando') {
+            <div class="flex flex-col gap-3" aria-hidden="true">
+              @for (n of [1, 2, 3, 4]; track n) {
+                <div
+                  class="h-12 animate-pulse rounded-lg bg-muted motion-reduce:animate-none"
+                ></div>
+              }
+            </div>
+            <p class="sr-only" role="status">Cargando la ocupación…</p>
+          }
+          @case ('sin-servicio') {
+            <p
+              class="flex items-start gap-3 rounded-xl bg-muted px-4 py-3 text-sm text-primary-dark"
+              role="status"
+            >
+              <svg
+                class="mt-0.5 size-4 shrink-0 text-primary"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 11v5M12 8h.01" />
+              </svg>
+              No se puede mostrar la ocupación: la consulta de clases y reservas todavía no está
+              conectada.
+            </p>
+          }
+          @case ('error') {
+            <div
+              class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+              role="alert"
+            >
+              No se pudo cargar la ocupación de este período.
+              <button
+                type="button"
+                class="min-h-9 rounded-full border border-red-700/30 bg-surface px-3.5 font-semibold transition-colors hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
+                (click)="reintentar()"
+              >
+                Volver a cargar
+              </button>
+            </div>
+          }
+          @case ('listo') {
+            <p class="sr-only" role="status">
+              {{ totales().clases }} {{ totales().clases === 1 ? 'clase' : 'clases' }} y
+              {{ totales().reservas }} {{ totales().reservas === 1 ? 'reserva' : 'reservas' }} en
+              {{ titulo() }}.
+            </p>
+
+            @if (vista() === 'semana') {
+              <!-- TEMPORAL: cuadrícula semanal sencilla hasta que exista app-grilla-semanal (G3).
+                   Desde @3xl es una cuadrícula por horas; en anchos menores cada día es una lista. -->
+              <div class="@3xl:grid @3xl:grid-cols-[3.25rem_minmax(0,1fr)]">
+                <div class="hidden @3xl:block" aria-hidden="true">
+                  <div
+                    class="relative mt-14 h-(--alto-columna)"
+                    [style.--alto-columna]="altoColumna() + 'rem'"
+                  >
+                    @for (hora of horas(); track hora.etiqueta; let primera = $first) {
+                      <span
+                        class="absolute right-2 text-[11px] leading-none text-text-secondary tabular-nums"
+                        [class]="primera ? '' : '-translate-y-1/2'"
+                        [style.top.%]="hora.arriba"
+                        >{{ hora.etiqueta }}</span
+                      >
+                    }
+                  </div>
+                </div>
+
+                <ol
+                  class="flex flex-col divide-y divide-border @3xl:grid @3xl:divide-y-0 @3xl:overflow-hidden @3xl:rounded-xl @3xl:border @3xl:border-border"
+                  [style.grid-template-columns]="'repeat(' + semana().length + ', minmax(0, 1fr))'"
+                >
+                  @for (dia of semana(); track dia.iso; let primera = $first) {
+                    <li
+                      class="flex min-w-0 flex-col gap-2 py-3 transition-colors duration-300 @3xl:gap-0 @3xl:py-0 motion-reduce:transition-none"
+                      [class]="
+                        (primera ? '' : '@3xl:border-l @3xl:border-border') +
+                        (dia.elegido ? ' @3xl:bg-header' : '')
+                      "
+                      [attr.data-elegido]="dia.elegido || null"
+                      [attr.aria-current]="dia.hoy ? 'date' : null"
+                    >
+                      <h3
+                        class="flex items-center gap-2 text-sm font-semibold tabular-nums @3xl:h-14 @3xl:flex-col @3xl:justify-center @3xl:gap-0.5 @3xl:border-b @3xl:border-border"
+                        [class]="dia.hoy ? 'text-accent-gold' : 'text-primary-dark'"
+                      >
+                        <span class="@3xl:hidden">{{ dia.etiqueta }}</span>
+                        <span
+                          class="hidden text-[11px] font-medium tracking-wide uppercase @3xl:block"
+                          [class]="dia.hoy ? 'text-accent-gold' : 'text-text-secondary'"
+                          >{{ dia.diaCorto }}</span
+                        >
+                        <span
+                          class="hidden size-7 place-items-center rounded-full text-[15px] @3xl:grid"
+                          [class]="
+                            dia.hoy
+                              ? 'bg-accent-gold text-white'
+                              : dia.elegido
+                                ? 'bg-primary text-white'
+                                : ''
+                          "
+                          >{{ dia.numero }}</span
+                        >
+                        @if (dia.hoy) {
+                          <span
+                            class="rounded-full border border-accent-gold/60 px-1.5 text-[11px] leading-4 font-semibold @3xl:hidden"
+                            >Hoy</span
+                          >
+                        }
+                      </h3>
+
+                      <div
+                        class="relative @3xl:h-(--alto-columna)"
+                        [style.--alto-columna]="altoColumna() + 'rem'"
+                      >
+                        <div
+                          class="pointer-events-none absolute inset-0 hidden @3xl:block"
+                          aria-hidden="true"
+                        >
+                          @for (hora of horas(); track hora.etiqueta) {
+                            <span
+                              class="absolute inset-x-0 border-t border-border/70"
+                              [style.top.%]="hora.arriba"
+                            ></span>
+                          }
+                          @if (dia.hoy && lineaAhora() !== null) {
+                            <span
+                              class="absolute inset-x-0 z-10 border-t-2 border-accent-gold"
+                              [style.top.%]="lineaAhora()"
+                              ><span
+                                class="absolute -top-[5px] -left-1 size-2 rounded-full bg-accent-gold"
+                              ></span
+                            ></span>
+                          }
+                        </div>
+
+                        @if (dia.bloques.length) {
+                          <ul class="flex flex-col gap-2 @3xl:absolute @3xl:inset-0 @3xl:block">
+                            @for (
+                              bloque of dia.bloques;
+                              track bloque.ocupacion.tipo + bloque.ocupacion.id
+                            ) {
+                              <li
+                                class="min-w-0 @3xl:absolute @3xl:top-(--arriba) @3xl:left-(--izquierda) @3xl:h-(--alto-bloque) @3xl:w-(--ancho) @3xl:p-px"
+                                [style.--arriba]="bloque.arriba + '%'"
+                                [style.--alto-bloque]="bloque.alto + '%'"
+                                [style.--izquierda]="(bloque.carril / bloque.carriles) * 100 + '%'"
+                                [style.--ancho]="100 / bloque.carriles + '%'"
+                                [title]="
+                                  bloque.ocupacion.hora_inicio +
+                                  '–' +
+                                  bloque.ocupacion.hora_fin +
+                                  ' · ' +
+                                  bloque.ocupacion.titulo +
+                                  (bloque.ocupacion.responsable
+                                    ? ' · ' + bloque.ocupacion.responsable
+                                    : '') +
+                                  (bloqueaEspacio(bloque.ocupacion) ? '' : ' · pendiente')
+                                "
+                              >
+                                <div
+                                  class="flex h-full min-w-0 items-baseline gap-x-2 overflow-hidden rounded-lg px-3 py-2 text-sm leading-snug transition-shadow duration-150 hover:shadow-md @3xl:rounded-md @3xl:px-2 @3xl:text-xs motion-reduce:transition-none"
+                                  [class]="
+                                    (bloque.ocupacion.tipo === 'CLASE'
+                                      ? 'bg-primary text-white'
+                                      : bloqueaEspacio(bloque.ocupacion)
+                                        ? 'bg-[color-mix(in_oklab,var(--color-accent-gold)_45%,var(--color-surface))] text-wine-deep'
+                                        : 'border border-dashed border-accent-gold bg-surface text-primary-dark') +
+                                    (bloque.compacto
+                                      ? ' @3xl:items-center @3xl:py-0'
+                                      : ' @3xl:flex-col @3xl:items-start @3xl:py-1')
+                                  "
+                                >
+                                  <span class="shrink-0 font-semibold tabular-nums @3xl:font-medium"
+                                    >{{ bloque.ocupacion.hora_inicio }}–{{
+                                      bloque.ocupacion.hora_fin
+                                    }}</span
+                                  >
+                                  <span class="min-w-0 truncate font-semibold @3xl:max-w-full">
+                                    <span class="sr-only">{{
+                                      bloque.ocupacion.tipo === 'CLASE'
+                                        ? 'Clase:'
+                                        : bloqueaEspacio(bloque.ocupacion)
+                                          ? 'Reserva aprobada:'
+                                          : 'Reserva pendiente:'
+                                    }}</span>
+                                    {{ bloque.ocupacion.titulo }}
+                                  </span>
+                                  @if (bloque.ocupacion.responsable) {
+                                    <span
+                                      class="min-w-0 truncate opacity-80 @3xl:max-w-full"
+                                      [class]="bloque.compacto ? '@3xl:hidden' : ''"
+                                      >{{ bloque.ocupacion.responsable }}</span
+                                    >
+                                  }
+                                  @if (!bloqueaEspacio(bloque.ocupacion)) {
+                                    <span
+                                      class="shrink-0 text-xs opacity-80"
+                                      [class]="bloque.compacto ? '@3xl:hidden' : ''"
+                                      aria-hidden="true"
+                                      >Pendiente</span
+                                    >
+                                  }
+                                </div>
+                              </li>
+                            }
+                          </ul>
+                        } @else {
+                          <p class="text-sm text-text-secondary @3xl:sr-only">
+                            Sin clases ni reservas.
+                          </p>
+                        }
+                      </div>
+                    </li>
+                  }
+                </ol>
+              </div>
+            } @else {
+              <!-- TEMPORAL: vista mensual sencilla hasta que exista app-calendario-mensual (C4-15),
+                   que recibirá el mes y los eventos y emitirá (diaSeleccionado)="verSemana($event)". -->
+              <div class="grid grid-cols-7 gap-1 text-center">
+                @for (nombre of DIAS_CORTOS; track nombre) {
+                  <span
+                    class="py-1.5 text-xs font-semibold text-text-secondary"
+                    aria-hidden="true"
+                    >{{ nombre }}</span
+                  >
+                }
+                @for (dia of mes(); track dia.iso) {
+                  <button
+                    type="button"
+                    class="flex min-h-16 min-w-0 flex-col items-stretch gap-1 rounded-lg border p-1.5 text-left transition-[background-color,border-color,box-shadow,translate] duration-150 hover:border-primary/40 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary motion-safe:hover:-translate-y-0.5 motion-reduce:transition-none @lg:min-h-24 @lg:p-2"
+                    [class]="
+                      (dia.nivel === 'alto'
+                        ? 'bg-primary/22'
+                        : dia.nivel === 'medio'
+                          ? 'bg-primary/12'
+                          : dia.nivel === 'bajo'
+                            ? 'bg-muted'
+                            : 'bg-surface') +
+                      (dia.hoy ? ' border-accent-gold' : ' border-border') +
+                      (dia.delMes ? '' : ' opacity-55 hover:opacity-100')
+                    "
+                    [attr.aria-label]="
+                      dia.etiqueta +
+                      (dia.delMes
+                        ? '. Ver la semana.'
+                        : '. Ir a ' + nombreMes(dia.iso.slice(0, 7)) + '.')
+                    "
+                    [attr.aria-current]="dia.hoy ? 'date' : null"
+                    [title]="
+                      dia.delMes ? 'Ver la semana' : 'Ir a ' + nombreMes(dia.iso.slice(0, 7))
+                    "
+                    (click)="dia.delMes ? verSemana(dia.iso) : irAlMes(dia.iso)"
+                  >
+                    <span class="flex items-baseline justify-between gap-1">
+                      <span
+                        class="text-sm font-semibold tabular-nums"
+                        [class]="dia.hoy ? 'text-accent-gold' : 'text-primary-dark'"
+                        >{{ dia.numero }}</span
+                      >
+                      <span
+                        class="hidden truncate text-[11px] tabular-nums @3xl:inline"
+                        [class]="dia.minutosOcupados ? 'text-primary-dark' : 'text-emerald-700'"
+                        aria-hidden="true"
+                        >{{
+                          dia.minutosOcupados
+                            ? duracionTexto(dia.minutosOcupados)
+                            : dia.clases + dia.reservas
+                              ? ''
+                              : 'Libre'
+                        }}</span
+                      >
+                    </span>
+
+                    <span
+                      class="mt-auto hidden text-[11px] leading-tight text-text-secondary @3xl:block"
+                      aria-hidden="true"
+                    >
+                      @if (dia.clases) {
+                        {{ dia.clases }} {{ dia.clases === 1 ? 'clase' : 'clases' }}
+                      }
+                      @if (dia.clases && dia.reservas) {
+                        ·
+                      }
+                      @if (dia.reservas) {
+                        {{ dia.reservas }} {{ dia.reservas === 1 ? 'reserva' : 'reservas' }}
+                      }
+                    </span>
+
+                    <!-- Mini regla del día: cuándo está ocupado, con los colores de la semana. -->
+                    <span
+                      class="relative mt-auto block h-2 overflow-hidden rounded-full bg-surface ring-1 ring-border @3xl:mt-0 @lg:h-2.5"
+                      aria-hidden="true"
+                    >
+                      @for (
+                        bloque of dia.bloques;
+                        track bloque.ocupacion.tipo + bloque.ocupacion.id
+                      ) {
+                        <span
+                          class="absolute inset-y-0"
+                          [class]="
+                            bloque.ocupacion.tipo === 'CLASE'
+                              ? 'bg-primary'
+                              : bloqueaEspacio(bloque.ocupacion)
+                                ? 'bg-[color-mix(in_oklab,var(--color-accent-gold)_45%,var(--color-surface))]'
+                                : 'bg-surface bg-[linear-gradient(90deg,var(--color-accent-gold)_50%,transparent_0),linear-gradient(90deg,var(--color-accent-gold)_50%,transparent_0),linear-gradient(0deg,var(--color-accent-gold)_50%,transparent_0),linear-gradient(0deg,var(--color-accent-gold)_50%,transparent_0)] [background-size:4px_1px,4px_1px,1px_4px,1px_4px] [background-position:0_0,0_100%,0_0,100%_0] [background-repeat:repeat-x,repeat-x,repeat-y,repeat-y]'
+                          "
+                          [style.left.%]="bloque.izquierda"
+                          [style.width.%]="bloque.ancho"
+                        ></span>
+                      }
+                    </span>
+                  </button>
+                }
+              </div>
+              <div
+                class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-text-secondary"
+                aria-hidden="true"
+              >
+                <span>Horario ocupado:</span>
+                <span class="flex items-center gap-1.5"
+                  ><span class="h-3 w-4 rounded-[3px] border border-border bg-surface"></span
+                  >Libre</span
+                >
+                <span class="flex items-center gap-1.5"
+                  ><span class="h-3 w-4 rounded-[3px] border border-border bg-muted"></span>Hasta un
+                  cuarto</span
+                >
+                <span class="flex items-center gap-1.5"
+                  ><span class="h-3 w-4 rounded-[3px] border border-border bg-primary/12"></span
+                  >Hasta la mitad</span
+                >
+                <span class="flex items-center gap-1.5"
+                  ><span class="h-3 w-4 rounded-[3px] border border-border bg-primary/22"></span>Más
+                  de la mitad</span
+                >
+              </div>
+            }
+          }
+        }
+      </div>
+    </section>
+  </div>
+</div>

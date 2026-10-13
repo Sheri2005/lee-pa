@@ -1,0 +1,20 @@
+<label [for]="idSelect" class="block text-sm font-medium text-primary-dark">{{ etiqueta() }}</label>
+    <select
+      [id]="idSelect"
+      class="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-primary-dark
+             focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary
+             disabled:opacity-50"
+      [disabled]="carga().cargando || carga().error || !carga().items.length"
+      (change)="seleccionar($any($event.target).value)"
+    >
+      <option value="" disabled [selected]="seleccionValida() === null">{{ textoPlaceholder() }}</option>
+      @for (p of carga().items; track p.id) {
+        <option [value]="p.id" [selected]="p.id === seleccionValida()">
+          {{ p.carrera.nombre }} · {{ p.periodo.codigo }}
+        </option>
+}
+    </select>
+
+    @if (carga().error) {
+      <p role="alert" class="m-0 mt-1 text-sm text-accent">No se pudieron cargar las planificaciones.</p>
+    }

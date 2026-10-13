@@ -1,0 +1,164 @@
+<form
+  [formGroup]="form"
+  (ngSubmit)="alGuardar()"
+  novalidate
+  class="rounded-lg border border-border bg-surface p-4"
+>
+  <h2 class="text-lg font-semibold text-primary-dark">{{ titulo() }}</h2>
+
+  <div class="mt-4 grid gap-4 md:grid-cols-2">
+    <div>
+      <label [for]="prefijo + '-codigo'" class="block text-sm font-medium text-primary-dark">
+        Código <span aria-hidden="true" class="text-accent">*</span>
+      </label>
+      <input
+        [id]="prefijo + '-codigo'"
+        formControlName="codigo"
+        type="text"
+        autocomplete="off"
+        placeholder="Ej.: 2027-1"
+        [class]="clase('codigo')"
+        [attr.aria-invalid]="error('codigo') ? true : null"
+        [attr.aria-describedby]="error('codigo') ? prefijo + '-codigo-error' : null"
+      />
+      @if (error('codigo'); as mensaje) {
+        <p [id]="prefijo + '-codigo-error'" role="alert" class="m-0 mt-1 text-sm text-accent">
+          {{ mensaje }}
+        </p>
+      }
+    </div>
+
+    <div>
+      <label [for]="prefijo + '-nombre'" class="block text-sm font-medium text-primary-dark">
+        Nombre <span aria-hidden="true" class="text-accent">*</span>
+      </label>
+      <input
+        [id]="prefijo + '-nombre'"
+        formControlName="nombre"
+        type="text"
+        autocomplete="off"
+        placeholder="Ej.: Primer período ordinario 2027"
+        [class]="clase('nombre')"
+        [attr.aria-invalid]="error('nombre') ? true : null"
+        [attr.aria-describedby]="error('nombre') ? prefijo + '-nombre-error' : null"
+      />
+      @if (error('nombre'); as mensaje) {
+        <p [id]="prefijo + '-nombre-error'" role="alert" class="m-0 mt-1 text-sm text-accent">
+          {{ mensaje }}
+        </p>
+      }
+    </div>
+
+    <div>
+      <label [for]="prefijo + '-tipo'" class="block text-sm font-medium text-primary-dark">
+        Tipo <span aria-hidden="true" class="text-accent">*</span>
+      </label>
+      <select
+        [id]="prefijo + '-tipo'"
+        formControlName="tipo"
+        [class]="clase('tipo')"
+        [attr.aria-invalid]="error('tipo') ? true : null"
+      >
+        @for (t of tipos; track t.valor) {
+          <option [value]="t.valor">{{ t.etiqueta }}</option>
+        }
+      </select>
+      @if (error('tipo'); as mensaje) {
+        <p role="alert" class="m-0 mt-1 text-sm text-accent">{{ mensaje }}</p>
+      }
+    </div>
+
+    <div>
+      <label [for]="prefijo + '-estado'" class="block text-sm font-medium text-primary-dark">
+        Estado <span aria-hidden="true" class="text-accent">*</span>
+      </label>
+      <select
+        [id]="prefijo + '-estado'"
+        formControlName="estado"
+        [class]="clase('estado')"
+        [attr.aria-invalid]="error('estado') ? true : null"
+      >
+        @for (e of estados; track e.valor) {
+          <option [value]="e.valor">{{ e.etiqueta }}</option>
+        }
+      </select>
+      @if (error('estado'); as mensaje) {
+        <p role="alert" class="m-0 mt-1 text-sm text-accent">{{ mensaje }}</p>
+      }
+    </div>
+
+    <div>
+      <label [for]="prefijo + '-inicio'" class="block text-sm font-medium text-primary-dark">
+        Fecha de inicio <span aria-hidden="true" class="text-accent">*</span>
+      </label>
+      <input
+        [id]="prefijo + '-inicio'"
+        formControlName="fechaInicio"
+        type="date"
+        [class]="clase('fechaInicio')"
+        [attr.aria-invalid]="error('fechaInicio') ? true : null"
+        [attr.aria-describedby]="error('fechaInicio') ? prefijo + '-inicio-error' : null"
+      />
+      @if (error('fechaInicio'); as mensaje) {
+        <p [id]="prefijo + '-inicio-error'" role="alert" class="m-0 mt-1 text-sm text-accent">
+          {{ mensaje }}
+        </p>
+      }
+    </div>
+
+    <div>
+      <label [for]="prefijo + '-fin'" class="block text-sm font-medium text-primary-dark">
+        Fecha de fin <span aria-hidden="true" class="text-accent">*</span>
+      </label>
+      <input
+        [id]="prefijo + '-fin'"
+        formControlName="fechaFin"
+        type="date"
+        [class]="clase('fechaFin')"
+        [attr.aria-invalid]="error('fechaFin') ? true : null"
+        [attr.aria-describedby]="error('fechaFin') ? prefijo + '-fin-error' : null"
+      />
+      @if (error('fechaFin'); as mensaje) {
+        <p [id]="prefijo + '-fin-error'" role="alert" class="m-0 mt-1 text-sm text-accent">
+          {{ mensaje }}
+        </p>
+      }
+    </div>
+
+    <!-- Código SIAC: reemplazable por <app-campo-codigo-siac formControlName="codigoSiac" entity="periodo" [idActual]="periodo()?.id" /> (G5) -->
+    <div>
+      <label [for]="prefijo + '-siac'" class="block text-sm font-medium text-primary-dark">
+        Código SIAC 1.0
+      </label>
+      <input
+        [id]="prefijo + '-siac'"
+        formControlName="codigoSiac"
+        type="text"
+        autocomplete="off"
+        spellcheck="false"
+        [class]="clase('codigoSiac')"
+        [attr.aria-invalid]="error('codigoSiac') ? true : null"
+      />
+      @if (error('codigoSiac'); as mensaje) {
+        <p role="alert" class="m-0 mt-1 text-sm text-accent">{{ mensaje }}</p>
+      }
+    </div>
+    <!-- Fin del bloque reemplazable -->
+  </div>
+
+  <div class="mt-6 flex justify-end gap-3">
+    <button
+      type="button"
+      class="rounded-md border border-border bg-surface px-4 py-2 font-medium text-primary-dark hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      (click)="cancelar.emit()"
+    >
+      Cancelar
+    </button>
+    <button
+      type="submit"
+      class="rounded-md bg-primary px-4 py-2 font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+    >
+      Guardar
+    </button>
+  </div>
+</form>

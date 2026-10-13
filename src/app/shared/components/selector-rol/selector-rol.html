@@ -1,0 +1,47 @@
+@if (multiple()) {
+  <fieldset [disabled]="bloqueado()" class="flex flex-col gap-1">
+    <legend class="text-sm font-medium text-text-secondary">{{ etiqueta() }}</legend>
+    @if (cargando()) {
+      <p class="text-sm text-text-secondary">Cargando roles…</p>
+    }
+    <div class="mt-1 flex flex-wrap gap-x-4 gap-y-2">
+      @for (r of roles(); track r.id) {
+        <label class="flex items-center gap-2 text-sm" [title]="r.descripcion ?? ''">
+          <input
+            type="checkbox"
+            [checked]="estaElegido(r.nombre)"
+            (change)="alternar(r.nombre, $any($event.target).checked)"
+            (blur)="tocar()"
+            class="size-4 accent-primary"
+          />
+          {{ r.nombre }}
+        </label>
+      }
+    </div>
+  </fieldset>
+} @else {
+  <div class="flex flex-col gap-1">
+    <label [for]="idCampo" class="text-sm font-medium text-text-secondary">{{ etiqueta() }}</label>
+    <select
+      #sel
+      [id]="idCampo"
+      [disabled]="bloqueado()"
+      (change)="elegirUno(sel.value)"
+      (blur)="tocar()"
+      class="rounded-md border border-border bg-surface px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-primary disabled:bg-muted disabled:text-text-secondary"
+    >
+      @if (cargando()) {
+        <option value="">Cargando roles…</option>
+      } @else {
+        <option value="" disabled [selected]="elegidos().length === 0">Selecciona un rol</option>
+      }
+      @for (r of roles(); track r.id) {
+        <option [value]="r.nombre" [selected]="estaElegido(r.nombre)" [title]="r.descripcion ?? ''">{{ r.nombre }}</option>
+      }
+    </select>
+  </div>
+}
+
+@if (error()) {
+  <p role="alert" class="mt-1 text-xs text-accent">No se pudieron cargar los roles.</p>
+}

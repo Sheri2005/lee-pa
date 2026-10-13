@@ -1,0 +1,210 @@
+@let carga = vista();
+
+<div class="space-y-4">
+  <!-- EDITAR (C3-23): reemplazar este <header> por
+       <app-encabezado-pagina titulo="Planificaciones" subtitulo="..." /> y poner el botón en su zona de acciones. -->
+  <header class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-semibold text-primary-dark">Planificaciones</h1>
+      <p class="text-sm text-text-secondary">
+        Planificaciones por carrera y período, con su estado actual.
+      </p>
+    </div>
+    <button
+      type="button"
+      class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      (click)="abrirNueva()"
+    >
+      Nueva planificación
+    </button>
+  </header>
+
+  @if (nuevaAbierta()) {
+    <app-planificacion-nueva (creada)="cerrarNueva(); recargar()" (cancelada)="cerrarNueva()" />
+  }
+
+  <!-- EDITAR (C4-21): envolver los filtros en <app-barra-filtros (buscar)="..." (limpiar)="limpiarFiltros()">. -->
+  <div
+    class="flex flex-wrap items-end gap-3 rounded-lg border border-l-4 border-border border-l-accent-gold bg-filter p-3"
+    role="search"
+    aria-label="Filtros de planificaciones"
+  >
+    <!-- EDITAR (C1-22): reemplazar por <app-selector-facultad [permitirTodas]="true" ... /> -->
+    <div class="min-w-44 flex-1">
+      <label [for]="idFacultad" class="block text-sm font-medium text-primary-dark">Facultad</label>
+      <select
+        [id]="idFacultad"
+        class="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-primary-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+        [disabled]="carga.tipo !== 'listo'"
+        (change)="alCambiarFacultad($any($event.target).value)"
+      >
+        <option value="" [selected]="facultadId() === null">Todas</option>
+        @for (opcion of opcionesFacultad(); track opcion.id) {
+          <option [value]="opcion.id" [selected]="facultadId() === opcion.id">{{ opcion.etiqueta }}</option>
+        }
+      </select>
+    </div>
+
+    <!-- EDITAR (C1-25): reemplazar por <app-selector-carrera ... /> -->
+    <div class="min-w-44 flex-1">
+      <label [for]="idCarrera" class="block text-sm font-medium text-primary-dark">Carrera</label>
+      <select
+        [id]="idCarrera"
+        class="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-primary-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+        [disabled]="carga.tipo !== 'listo'"
+        (change)="alCambiarCarrera($any($event.target).value)"
+      >
+        <option value="" [selected]="carreraId() === null">Todas</option>
+        @for (opcion of opcionesCarrera(); track opcion.id) {
+          <option [value]="opcion.id" [selected]="carreraId() === opcion.id">{{ opcion.etiqueta }}</option>
+        }
+      </select>
+    </div>
+
+    <!-- EDITAR (C1-28): reemplazar por <app-selector-periodo ... /> -->
+    <div class="min-w-36">
+      <label [for]="idPeriodo" class="block text-sm font-medium text-primary-dark">Período</label>
+      <select
+        [id]="idPeriodo"
+        class="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-primary-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+        [disabled]="carga.tipo !== 'listo'"
+        (change)="alCambiarPeriodo($any($event.target).value)"
+      >
+        <option value="" [selected]="periodoId() === null">Todos</option>
+        @for (opcion of opcionesPeriodo(); track opcion.id) {
+          <option [value]="opcion.id" [selected]="periodoId() === opcion.id">{{ opcion.etiqueta }}</option>
+        }
+      </select>
+    </div>
+
+    <!-- EDITAR (C5-09): reemplazar por <app-selector-estado [estados]="[...]" ... /> -->
+    <div class="min-w-36">
+      <label [for]="idEstado" class="block text-sm font-medium text-primary-dark">Estado</label>
+      <select
+        [id]="idEstado"
+        class="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-primary-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        (change)="alCambiarEstado($any($event.target).value)"
+      >
+        <option value="" [selected]="estadoFiltro() === null">Todos</option>
+        @for (opcion of estados; track opcion.valor) {
+          <option [value]="opcion.valor" [selected]="estadoFiltro() === opcion.valor">{{ opcion.etiqueta }}</option>
+        }
+      </select>
+    </div>
+
+    @if (hayFiltros()) {
+      <button
+        type="button"
+        class="rounded-md border border-border bg-surface px-4 py-2 text-sm text-primary-dark hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        (click)="limpiarFiltros()"
+      >
+        Limpiar filtros
+      </button>
+    }
+  </div>
+
+  <section
+    class="space-y-3 rounded-xl border border-border bg-surface p-4"
+    aria-label="Resultados"
+    [attr.aria-busy]="carga.tipo === 'cargando'"
+  >
+    @switch (carga.tipo) {
+      @case ('cargando') {
+        <app-spinner-carga tipo="esqueleto" [filas]="4" mensaje="Cargando planificaciones…" />
+      }
+      @case ('error') {
+        <div class="space-y-3 rounded-lg border border-border bg-muted p-4">
+          <p role="alert" class="text-sm text-primary-dark">
+            No se pudieron cargar las planificaciones. Intenta nuevamente.
+          </p>
+          <button
+            type="button"
+            class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            (click)="recargar()"
+          >
+            Reintentar
+          </button>
+        </div>
+      }
+      @case ('listo') {
+        @let visibles = planificacionesVisibles();
+
+        @if (visibles.length) {
+          <p role="status" class="text-sm font-medium text-brand">
+            {{ visibles.length }} {{ visibles.length === 1 ? 'planificación' : 'planificaciones' }}
+          </p>
+
+          <!-- EDITAR (C4-20): reemplazar la tabla por <app-tabla-datos> (columnas, estados y badge). -->
+          <div class="overflow-x-auto rounded-lg border border-border">
+            <table class="w-full min-w-176 border-collapse text-left text-sm">
+              <caption class="sr-only">
+                Planificaciones con su carrera, facultad, período, malla y estado
+              </caption>
+              <thead class="bg-table-header text-brand">
+                <tr>
+                  <th scope="col" class="px-4 py-3 font-semibold">Carrera</th>
+                  <th scope="col" class="px-4 py-3 font-semibold">Facultad</th>
+                  <th scope="col" class="px-4 py-3 font-semibold">Período</th>
+                  <th scope="col" class="px-4 py-3 font-semibold">Malla</th>
+                  <th scope="col" class="px-4 py-3 font-semibold">Estado</th>
+                  <th scope="col" class="px-4 py-3 text-right font-semibold">
+                    <span class="sr-only">Acciones</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of visibles; track p.id) {
+                  <tr class="border-b border-border text-primary-dark last:border-b-0 hover:bg-muted">
+                    <th scope="row" class="px-4 py-3 text-left font-semibold">
+                      {{ p.carrera.nombre }}
+                      <span class="block font-mono text-xs font-normal text-text-secondary">
+                        {{ p.carrera.codigo }}
+                      </span>
+                    </th>
+                    <td class="px-4 py-3">{{ p.facultad.nombre }}</td>
+                    <td class="px-4 py-3">
+                      {{ p.periodo.codigo }}
+                      <span class="block text-xs text-text-secondary">{{ p.periodo.nombre }}</span>
+                    </td>
+                    <td class="px-4 py-3">{{ p.malla.nombre }} ({{ p.malla.anioInicio }})</td>
+                    <td class="px-4 py-3">
+                      <!-- EDITAR (C5-08): reemplazar el span por <app-estado-badge [estado]="p.estado" /> -->
+                      <span
+                        class="inline-block rounded-full border px-2.5 py-0.5 text-xs font-semibold"
+                        [class]="claseEstado(p.estado)"
+                      >
+                        {{ etiquetaEstado(p.estado) }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                      <a
+                        class="inline-block rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                        [routerLink]="['/planificacion', p.id]"
+                        [attr.aria-label]="'Abrir planificación de ' + p.carrera.nombre + ', período ' + p.periodo.codigo"
+                      >
+                        Abrir
+                      </a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else if (hayFiltros()) {
+          <app-estado-vacio
+            icono="🔎"
+            mensaje="No hay planificaciones que coincidan con los filtros."
+            textoAccion="Limpiar filtros"
+            (accion)="limpiarFiltros()"
+          />
+        } @else {
+          <app-estado-vacio
+            mensaje="Todavía no hay planificaciones."
+            textoAccion="Nueva planificación"
+            (accion)="abrirNueva()"
+          />
+        }
+      }
+    }
+  </section>
+</div>

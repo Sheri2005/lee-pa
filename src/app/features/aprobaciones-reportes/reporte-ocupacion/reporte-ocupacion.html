@@ -1,0 +1,258 @@
+<main class="mx-auto grid w-full max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:py-12">
+  <header class="grid gap-2">
+    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-accent">
+      Grupo 5 · C5-15
+    </p>
+    <h1 class="text-2xl font-bold text-primary-dark sm:text-3xl">
+      Reporte de ocupación
+    </h1>
+    <p class="max-w-3xl text-sm leading-6 text-text-secondary sm:text-base">
+      Consulta el uso de aulas y laboratorios por edificio y espacio, y revisa la grilla semanal.
+    </p>
+  </header>
+
+  @if (estado === 'servicioPendiente') {
+    <section
+      class="rounded-xl border border-border bg-surface p-6 text-sm text-text-secondary"
+      role="status"
+    >
+      <h2 class="font-semibold text-primary-dark">ReporteService pendiente</h2>
+      <p class="mt-2">
+        La página está lista para conectarse cuando el servicio de reportes esté disponible.
+      </p>
+    </section>
+  } @else {
+    @if (catalogos) {
+      <app-filtros-reporte
+        [facultades]="catalogos.facultades"
+        [carreras]="catalogos.carreras"
+        [periodos]="catalogos.periodos"
+        (filtrosAplicados)="aplicarFiltros($event)"
+      />
+
+      <section
+        class="grid gap-4 rounded-2xl border border-border bg-surface p-5 shadow-sm sm:grid-cols-3 sm:p-6"
+        aria-label="Filtros de ocupación"
+      >
+        <label class="grid gap-2 text-sm font-medium text-primary-dark">
+          Edificio
+          <select
+            class="rounded-lg border border-border bg-surface px-3 py-2"
+            [value]="edificioIdSeleccionado ?? ''"
+            (change)="cambiarEdificio($any($event.target).value || null)"
+          >
+            <option value="">Todos los edificios</option>
+            @for (edificio of catalogos.edificios; track edificio.id) {
+              <option [value]="edificio.id">{{ edificio.nombre }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="grid gap-2 text-sm font-medium text-primary-dark">
+          Espacio
+          <select
+            class="rounded-lg border border-border bg-surface px-3 py-2"
+            [value]="espacioIdSeleccionado ?? ''"
+            (change)="cambiarEspacio($any($event.target).value || null)"
+          >
+            <option value="">Todos los espacios</option>
+            @for (espacio of espaciosDisponibles; track espacio.id) {
+              <option [value]="espacio.id">{{ espacio.nombre }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="grid gap-2 text-sm font-medium text-primary-dark">
+          Franja horaria
+          <select
+            class="rounded-lg border border-border bg-surface px-3 py-2"
+            [value]="franjaIdSeleccionada ?? ''"
+            (change)="cambiarFranja($any($event.target).value || null)"
+          >
+            <option value="">Todas las franjas</option>
+            @for (franja of catalogos.franjas; track franja.id) {
+              <option [value]="franja.id">{{ franja.nombre }}</option>
+            }
+          </select>
+        </label>
+      </section>
+    }
+
+    @if (estado === 'cargando') {
+      <p
+        class="rounded-xl border border-border bg-surface p-5 text-sm text-text-secondary"
+        role="status"
+        aria-live="polite"
+      >
+        Cargando el reporte…
+      </p>
+    } @else if (estado === 'error') {
+      <section
+        class="grid gap-3 rounded-xl border border-red-200 bg-surface p-5 text-sm text-red-800"
+        role="alert"
+      >
+        <p>{{ mensajeError }}</p>
+        <button
+          type="button"
+          class="w-fit rounded-lg border border-red-300 px-4 py-2 font-medium transition hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          (click)="reintentar()"
+        >
+          Reintentar
+        </button>
+      </section>
+    } @else {
+      <section class="grid grid-cols-1 gap-4 sm:grid-cols-3" aria-label="Indicadores de ocupación">
+        <app-tarjeta-indicador
+          titulo="Ocupación promedio"
+          [valor]="resumen.porcentajeOcupacion"
+          icono="%"
+          detalle="Porcentaje de franjas utilizadas"
+          color="primary"
+        />
+        <app-tarjeta-indicador
+          titulo="Franjas ocupadas"
+          [valor]="resumen.franjasOcupadas"
+          icono="O"
+          detalle="Según los filtros aplicados"
+          color="accent"
+        />
+        <app-tarjeta-indicador
+          titulo="Franjas disponibles"
+          [valor]="resumen.franjasDisponibles"
+          icono="D"
+          detalle="Total de franjas evaluadas"
+          color="primary"
+        />
+      </section>
+
+      <section class="grid gap-4 rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6">
+        <app-grafico
+          tipo="barras"
+          titulo="Ocupación por espacio (%)"
+          [etiquetas]="resumen.etiquetas"
+          [series]="seriesGrafico"
+        />
+      </section>
+
+      <section
+        class="grid gap-4 rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6"
+        aria-labelledby="titulo-grilla-ocupacion"
+      >
+        <div>
+          <h2 id="titulo-grilla-ocupacion" class="text-lg font-semibold text-primary-dark">
+            Grilla semanal del espacio
+          </h2>
+          @if (!espacioIdSeleccionado) {
+            <p class="mt-1 text-sm text-text-secondary">
+              Selecciona un espacio para consultar su disponibilidad semanal.
+            </p>
+          }
+        </div>
+
+        @if (espacioIdSeleccionado && catalogos) {
+          <div class="overflow-x-auto rounded-xl border border-border">
+            <table class="w-full min-w-[760px] border-collapse text-left text-sm">
+              <caption class="sr-only">Ocupación por día y franja horaria del espacio seleccionado</caption>
+              <thead class="bg-header text-primary-dark">
+                <tr>
+                  <th scope="col" class="px-4 py-3 font-semibold">Franja</th>
+                  @for (dia of diasSemana; track dia.id) {
+                    <th scope="col" class="px-4 py-3 font-semibold">{{ dia.nombre }}</th>
+                  }
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border text-primary-dark">
+                @for (franja of franjasVisibles; track franja.id) {
+                  <tr class="bg-surface">
+                    <th scope="row" class="whitespace-nowrap px-4 py-3 font-medium">
+                      {{ franja.nombre }}
+                    </th>
+                    @for (dia of diasSemana; track dia.id) {
+                      <td class="px-4 py-3 text-center">
+                        @let celda = celdaEn(dia.id, franja.id);
+                        <span
+                          [class]="celda?.ocupado
+                            ? 'inline-flex rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-800'
+                            : celda
+                              ? 'inline-flex rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800'
+                              : 'inline-flex rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700'"
+                          [attr.title]="celda?.detalle ?? null"
+                        >
+                          {{ celda ? (celda.ocupado ? 'Ocupado' : 'Disponible') : 'Sin datos' }}
+                        </span>
+                      </td>
+                    }
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="8" class="px-4 py-6 text-center text-text-secondary">
+                      No hay franjas configuradas.
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+
+      <section
+        class="grid gap-4 rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6"
+        aria-labelledby="titulo-tabla-ocupacion"
+      >
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 id="titulo-tabla-ocupacion" class="text-lg font-semibold text-primary-dark">
+              Ocupación por edificio y espacio
+            </h2>
+            @if (estado === 'vacio') {
+              <p class="mt-1 text-sm text-text-secondary" role="status">
+                No hay resultados para los filtros seleccionados.
+              </p>
+            }
+          </div>
+          <app-boton-exportar
+            [datos]="filasExportacion"
+            [columnas]="columnasExportacion"
+            nombreArchivo="reporte-ocupacion"
+            [formatos]="['excel', 'pdf', 'csv']"
+          />
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-border">
+          <table class="w-full min-w-[640px] border-collapse text-left text-sm">
+            <caption class="sr-only">Franjas ocupadas y disponibles por edificio y espacio</caption>
+            <thead class="bg-header text-primary-dark">
+              <tr>
+                <th scope="col" class="px-4 py-3 font-semibold">Edificio</th>
+                <th scope="col" class="px-4 py-3 font-semibold">Espacio</th>
+                <th scope="col" class="px-4 py-3 text-right font-semibold">Franjas ocupadas</th>
+                <th scope="col" class="px-4 py-3 text-right font-semibold">Franjas disponibles</th>
+                <th scope="col" class="px-4 py-3 text-right font-semibold">Ocupación (%)</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border text-primary-dark">
+              @for (fila of filas; track fila.edificioId + ':' + fila.espacioId) {
+                <tr class="bg-surface hover:bg-filter">
+                  <td class="px-4 py-3">{{ fila.edificio }}</td>
+                  <td class="px-4 py-3">{{ fila.espacio }}</td>
+                  <td class="px-4 py-3 text-right tabular-nums">{{ fila.franjasOcupadas }}</td>
+                  <td class="px-4 py-3 text-right tabular-nums">{{ fila.franjasDisponibles }}</td>
+                  <td class="px-4 py-3 text-right tabular-nums">
+                    {{ (fila.franjasDisponibles === 0 ? 0 : fila.franjasOcupadas / fila.franjasDisponibles * 100) | number: '1.0-1' }}%
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="5" class="px-4 py-6 text-center text-text-secondary">
+                    No hay datos para mostrar.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+  }
+</main>

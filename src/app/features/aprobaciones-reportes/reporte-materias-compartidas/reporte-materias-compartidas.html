@@ -1,0 +1,152 @@
+<main class="mx-auto grid w-full max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:py-12">
+  <header class="grid gap-2">
+    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-accent">
+      Grupo 5 · C5-17
+    </p>
+    <h1 class="text-2xl font-bold text-primary-dark sm:text-3xl">
+      Reporte de materias compartidas
+    </h1>
+    <p class="max-w-3xl text-sm leading-6 text-text-secondary sm:text-base">
+      Revisa qué carrera administra cada materia compartida, qué carreras la solicitan y cuántos cupos requieren.
+    </p>
+  </header>
+
+  @if (estado === 'servicioPendiente') {
+    <section
+      class="rounded-xl border border-border bg-surface p-6 text-sm text-text-secondary"
+      role="status"
+    >
+      <h2 class="font-semibold text-primary-dark">ReporteService pendiente</h2>
+      <p class="mt-2">
+        La página está lista para conectarse cuando el servicio de reportes esté disponible.
+      </p>
+    </section>
+  } @else {
+    @if (catalogos) {
+      <app-filtros-reporte
+        [facultades]="catalogos.facultades"
+        [carreras]="catalogos.carreras"
+        [periodos]="catalogos.periodos"
+        (filtrosAplicados)="aplicarFiltros($event)"
+      />
+
+      <label class="grid max-w-xl gap-2 rounded-2xl border border-border bg-surface p-5 text-sm font-medium text-primary-dark shadow-sm">
+        Materia
+        <select
+          class="rounded-lg border border-border bg-surface px-3 py-2"
+          [value]="materiaIdSeleccionada ?? ''"
+          (change)="cambiarMateria($any($event.target).value || null)"
+        >
+          <option value="">Todas las materias</option>
+          @for (materia of catalogos.materias; track materia.id) {
+            <option [value]="materia.id">{{ materia.nombre }}</option>
+          }
+        </select>
+      </label>
+    }
+
+    @if (estado === 'cargando') {
+      <p
+        class="rounded-xl border border-border bg-surface p-5 text-sm text-text-secondary"
+        role="status"
+        aria-live="polite"
+      >
+        Cargando el reporte…
+      </p>
+    } @else if (estado === 'error') {
+      <section
+        class="grid gap-3 rounded-xl border border-red-200 bg-surface p-5 text-sm text-red-800"
+        role="alert"
+      >
+        <p>{{ mensajeError }}</p>
+        <button
+          type="button"
+          class="w-fit rounded-lg border border-red-300 px-4 py-2 font-medium transition hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          (click)="reintentar()"
+        >
+          Reintentar
+        </button>
+      </section>
+    } @else {
+      <section class="grid grid-cols-1 gap-4 sm:grid-cols-3" aria-label="Indicadores de materias compartidas">
+        <app-tarjeta-indicador
+          titulo="Materias compartidas"
+          [valor]="resumen.totalMateriasCompartidas"
+          icono="M"
+          detalle="Materias en el resultado filtrado"
+          color="primary"
+        />
+        <app-tarjeta-indicador
+          titulo="Carreras dependientes"
+          [valor]="resumen.totalCarrerasDependientes"
+          icono="C"
+          detalle="Relaciones materia-carrera"
+          color="accent"
+        />
+        <app-tarjeta-indicador
+          titulo="Cupos solicitados"
+          [valor]="resumen.totalCuposSolicitados"
+          icono="#"
+          detalle="Total en las carreras dependientes"
+          color="gold"
+        />
+      </section>
+
+      <section
+        class="grid gap-4 rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6"
+        aria-labelledby="titulo-tabla-materias-compartidas"
+      >
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 id="titulo-tabla-materias-compartidas" class="text-lg font-semibold text-primary-dark">
+              Carreras que solicitan cada materia
+            </h2>
+            @if (estado === 'vacio') {
+              <p class="mt-1 text-sm text-text-secondary" role="status">
+                No hay resultados para los filtros seleccionados.
+              </p>
+            }
+          </div>
+          <app-boton-exportar
+            [datos]="filas"
+            [columnas]="columnasExportacion"
+            nombreArchivo="reporte-materias-compartidas"
+            [formatos]="['excel', 'pdf', 'csv']"
+          />
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-border">
+          <table class="w-full min-w-[760px] border-collapse text-left text-sm">
+            <caption class="sr-only">
+              Materias compartidas con su carrera responsable, carreras dependientes y cupos solicitados
+            </caption>
+            <thead class="bg-header text-primary-dark">
+              <tr>
+                <th scope="col" class="px-4 py-3 font-semibold">Materia</th>
+                <th scope="col" class="px-4 py-3 font-semibold">Carrera responsable</th>
+                <th scope="col" class="px-4 py-3 font-semibold">Carrera dependiente</th>
+                <th scope="col" class="px-4 py-3 text-right font-semibold">Cupos solicitados</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border text-primary-dark">
+              @for (fila of filas; track claveFila(fila)) {
+                <tr class="bg-surface hover:bg-filter">
+                  <td class="px-4 py-3">{{ fila.materia }}</td>
+                  <td class="px-4 py-3">{{ fila.carreraResponsable }}</td>
+                  <td class="px-4 py-3">{{ fila.carreraDependiente }}</td>
+                  <td class="px-4 py-3 text-right tabular-nums">{{ fila.cuposSolicitados }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="4" class="px-4 py-6 text-center text-text-secondary">
+                    No hay datos para mostrar.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+  }
+</main>

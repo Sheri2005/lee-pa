@@ -1,0 +1,667 @@
+<div class="@container mx-auto w-full max-w-6xl">
+  <!-- TEMPORAL: encabezado sencillo hasta que exista app-encabezado-pagina (G3). -->
+  <header class="mb-6">
+    <h1 [id]="id + '-titulo'" class="text-2xl font-semibold tracking-tight text-primary-dark">
+      Solicitar reserva
+    </h1>
+    <p class="mt-1 max-w-prose text-sm text-text-secondary">
+      Reserva un espacio fuera del horario de clases. La solicitud queda pendiente hasta que se
+      apruebe.
+    </p>
+  </header>
+
+  <form
+    novalidate
+    class="grid items-start gap-5 @4xl:grid-cols-[minmax(0,1fr)_20rem] @5xl:grid-cols-[minmax(0,1fr)_22rem]"
+    [attr.aria-labelledby]="id + '-titulo'"
+    (submit)="$event.preventDefault(); enviar()"
+  >
+    <div class="flex min-w-0 flex-col gap-5">
+      <!-- Espacio -->
+      <section
+        class="min-w-0 rounded-xl border border-border bg-surface shadow-sm"
+        [attr.aria-labelledby]="id + '-espacio-titulo'"
+      >
+        <div class="flex items-center gap-2.5 border-b border-border px-5 py-3.5">
+          <span class="size-1.5 rounded-[1px] bg-accent-gold" aria-hidden="true"></span>
+          <h2 [id]="id + '-espacio-titulo'" class="text-[15px] font-semibold text-primary-dark">
+            Espacio
+          </h2>
+        </div>
+
+        <div class="px-5 py-4">
+          <!-- TEMPORAL: lista de espacios hasta que exista app-selector-espacio (G3). -->
+          @switch (catalogo().tipo) {
+            @case ('cargando') {
+              <div class="h-11 animate-pulse rounded-lg bg-muted motion-reduce:animate-none"></div>
+              <p class="sr-only" role="status">Cargando espacios…</p>
+            }
+            @case ('listo') {
+              <div class="flex min-w-0 flex-col gap-1.5">
+                <label class="text-sm font-medium text-primary-dark" [for]="id + '-espacio'">
+                  Espacio que quieres reservar
+                </label>
+                <app-campo-seleccion
+                  nombre="espacio"
+                  vacio="Elegir espacio…"
+                  [idCampo]="id + '-espacio'"
+                  [opciones]="opcionesEspacio()"
+                  [valor]="espacioId() === null ? '' : '' + espacioId()"
+                  [invalido]="intentado() && !!errorEspacio()"
+                  (valorChange)="elegirEspacio($event)"
+                />
+              </div>
+            }
+            @default {
+              @if (espacioId() !== null) {
+                <p
+                  class="flex min-h-11 items-center gap-2 rounded-lg border border-border bg-muted px-3 font-medium text-primary-dark tabular-nums"
+                >
+                  Espacio n.º {{ espacioId() }}
+                </p>
+              }
+              <p
+                class="flex items-start gap-2 text-sm text-text-secondary"
+                [class.mt-2]="espacioId() !== null"
+                role="status"
+              >
+                <svg
+                  class="mt-0.5 size-4 shrink-0 text-primary"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 11v5M12 8h.01" />
+                </svg>
+                {{
+                  catalogo().tipo === 'error'
+                    ? 'No se pudo cargar la lista de espacios. Vuelve a abrir la página para intentarlo de nuevo.'
+                    : 'La lista de espacios todavía no está conectada, así que no se pueden consultar los datos del espacio.'
+                }}
+              </p>
+            }
+          }
+
+          @if (espacio(); as e) {
+            <dl
+              class="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 rounded-xl bg-header px-4 py-3 text-sm @lg:grid-cols-4"
+            >
+              <div>
+                <dt class="text-xs text-text-secondary">Tipo</dt>
+                <dd class="font-medium text-primary-dark">{{ tipoLegible(e.tipo_espacio) }}</dd>
+              </div>
+              <div>
+                <dt class="text-xs text-text-secondary">Edificio</dt>
+                <dd class="font-medium text-primary-dark">{{ e.edificio }}</dd>
+              </div>
+              <div>
+                <dt class="text-xs text-text-secondary">Ubicación</dt>
+                <dd class="font-medium text-primary-dark">{{ pisoLegible(e.piso) }}</dd>
+              </div>
+              <div>
+                <dt class="text-xs text-text-secondary">Capacidad</dt>
+                <dd class="font-medium text-primary-dark tabular-nums">
+                  {{ e.capacidad }} personas
+                </dd>
+              </div>
+            </dl>
+          }
+
+          @if (intentado() && errorEspacio() && catalogo().tipo === 'listo') {
+            <p
+              class="mt-3 flex items-start gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700 transition duration-200 starting:-translate-y-1 starting:opacity-0 motion-reduce:transition-none"
+              role="alert"
+            >
+              <svg
+                class="mt-0.5 size-4 shrink-0"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 7.5v5M12 16h.01" />
+              </svg>
+              {{ errorEspacio() }}
+            </p>
+          }
+        </div>
+      </section>
+
+      <!-- Fecha y horario (C4-04) -->
+      <div class="flex min-w-0 flex-col">
+        <app-selector-rango-horario
+          etiqueta="Fecha y horario"
+          [fechaMin]="fechaMinima"
+          [horaMin]="HORA_MINIMA"
+          [horaMax]="HORA_MAXIMA"
+          [pasoMinutos]="PASO_MINUTOS"
+          [soloDiasHabiles]="true"
+          [(fecha)]="fecha"
+          [(inicio)]="inicio"
+          [(fin)]="fin"
+        />
+        @if (intentado() && !fecha() && !inicio() && !fin()) {
+          <p
+            tabindex="-1"
+            data-error-campo
+            class="mt-2 flex items-start gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700 outline-none transition duration-200 starting:-translate-y-1 starting:opacity-0 motion-reduce:transition-none"
+            role="alert"
+          >
+            <svg
+              class="mt-0.5 size-4 shrink-0"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 7.5v5M12 16h.01" />
+            </svg>
+            Elige la fecha, la hora de inicio y la hora de fin.
+          </p>
+        }
+      </div>
+
+      <!-- Repetición (C4-09 y C4-10) -->
+      <div
+        class="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface px-5 py-3.5 shadow-sm"
+      >
+        <span class="min-w-0">
+          <span [id]="id + '-repetir'" class="block text-[15px] font-semibold text-primary-dark">
+            Reserva recurrente
+          </span>
+          <span [id]="id + '-repetir-ayuda'" class="block text-sm text-text-secondary">
+            Se repite cada semana, de lunes a viernes, durante hasta {{ MAXIMO_DIAS_SERIE }} días.
+          </span>
+        </span>
+        <button
+          type="button"
+          role="switch"
+          class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary motion-reduce:transition-none"
+          [class]="repetir() ? 'bg-primary' : 'bg-text-secondary/30'"
+          [attr.aria-checked]="repetir()"
+          [attr.aria-labelledby]="id + '-repetir'"
+          [attr.aria-describedby]="id + '-repetir-ayuda'"
+          (click)="cambiarRepetir()"
+        >
+          <span
+            class="inline-block size-5 rounded-full bg-white shadow-md transition-transform duration-300 ease-out motion-reduce:transition-none"
+            [class]="repetir() ? 'translate-x-6' : 'translate-x-1'"
+          ></span>
+        </button>
+      </div>
+
+      @if (repetir()) {
+        @if (fecha() && !errorHorario()) {
+          <app-recurrencia-form
+            [fechaInicio]="fecha()"
+            [fechaMin]="fechaMinima"
+            [diasHabilitados]="DIAS_HABILES"
+            [maxDias]="MAXIMO_DIAS_SERIE"
+            [(dias)]="dias"
+            [(hasta)]="hasta"
+          />
+          <app-ocurrencias-recurrentes [ocurrencias]="ocurrencias()" />
+        } @else {
+          <p
+            tabindex="-1"
+            [attr.data-error-campo]="intentado() ? '' : null"
+            class="-mt-2 flex items-center gap-3 rounded-xl bg-muted px-4 py-3 text-sm text-text-secondary outline-none"
+            role="status"
+          >
+            <svg
+              class="size-4 shrink-0 text-primary"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 11v5M12 8h.01" />
+            </svg>
+            Elige primero una fecha y un horario válidos: la serie empieza ese día.
+          </p>
+        }
+      }
+
+      <!-- Asistentes y motivo -->
+      <section
+        class="min-w-0 rounded-xl border border-border bg-surface shadow-sm"
+        [attr.aria-labelledby]="id + '-detalles-titulo'"
+      >
+        <div class="flex items-center gap-2.5 border-b border-border px-5 py-3.5">
+          <span class="size-1.5 rounded-[1px] bg-accent-gold" aria-hidden="true"></span>
+          <h2 [id]="id + '-detalles-titulo'" class="text-[15px] font-semibold text-primary-dark">
+            Asistentes y motivo
+          </h2>
+        </div>
+
+        <div class="flex flex-col gap-4 px-5 py-4">
+          <div class="flex flex-col gap-1.5">
+            <label class="text-sm font-medium text-primary-dark" [for]="id + '-asistentes'">
+              Número de asistentes
+            </label>
+            <div
+              class="flex min-h-11 w-44 items-center rounded-lg border bg-surface shadow-xs transition-[border-color,box-shadow] duration-200 focus-within:ring-4 hover:border-primary/40 motion-reduce:transition-none"
+              [class]="
+                mostrarErrorAsistentes()
+                  ? 'border-red-700 focus-within:ring-red-700/10'
+                  : 'border-border focus-within:border-primary focus-within:ring-primary/10'
+              "
+            >
+              <button
+                type="button"
+                class="grid size-10 shrink-0 place-items-center rounded-l-lg text-primary transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-30"
+                aria-label="Cinco personas menos"
+                [attr.aria-controls]="id + '-asistentes'"
+                [disabled]="numeroAsistentes() <= 1"
+                (click)="sumarAsistentes(-1)"
+              >
+                <svg
+                  class="size-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="M5 12h14" />
+                </svg>
+              </button>
+              <input
+                type="text"
+                name="asistentes"
+                inputmode="numeric"
+                autocomplete="off"
+                maxlength="3"
+                class="w-full min-w-0 bg-transparent text-center font-medium text-primary-dark tabular-nums placeholder:text-text-secondary/50 focus:outline-none"
+                [id]="id + '-asistentes'"
+                [value]="asistentes()"
+                [attr.aria-invalid]="mostrarErrorAsistentes()"
+                [attr.aria-describedby]="
+                  id + (mostrarErrorAsistentes() ? '-error-asistentes' : '-ayuda-asistentes')
+                "
+                (input)="escribirAsistentes($event)"
+                (blur)="tocar('asistentes')"
+              />
+              <button
+                type="button"
+                class="grid size-10 shrink-0 place-items-center rounded-r-lg text-primary transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-30"
+                aria-label="Cinco personas más"
+                [attr.aria-controls]="id + '-asistentes'"
+                [disabled]="numeroAsistentes() >= topeAsistentes()"
+                (click)="sumarAsistentes(1)"
+              >
+                <svg
+                  class="size-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+              </button>
+            </div>
+            @if (mostrarErrorAsistentes()) {
+              <p
+                [id]="id + '-error-asistentes'"
+                class="flex items-start gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700 transition duration-200 starting:-translate-y-1 starting:opacity-0 motion-reduce:transition-none"
+                role="alert"
+              >
+                <svg
+                  class="mt-0.5 size-4 shrink-0"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 7.5v5M12 16h.01" />
+                </svg>
+                {{ errorAsistentes() }}
+              </p>
+            } @else {
+              <span [id]="id + '-ayuda-asistentes'" class="text-xs text-text-secondary">
+                {{
+                  espacio()
+                    ? 'Hasta ' + espacio()!.capacidad + ' personas en este espacio.'
+                    : 'Personas que usarán el espacio.'
+                }}
+              </span>
+            }
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <div class="flex items-baseline justify-between gap-3">
+              <label class="text-sm font-medium text-primary-dark" [for]="id + '-motivo'">
+                Motivo
+              </label>
+              <span
+                class="text-xs text-text-secondary tabular-nums"
+                [id]="id + '-contador-motivo'"
+                aria-live="polite"
+              >
+                {{ motivo().length }}/{{ MOTIVO_MAXIMO }}
+              </span>
+            </div>
+            <textarea
+              name="motivo"
+              rows="3"
+              placeholder="Por ejemplo: taller de robótica para estudiantes de primer semestre"
+              class="min-h-24 w-full resize-y rounded-lg border bg-surface px-3 py-2.5 text-primary-dark shadow-xs transition-[border-color,box-shadow] duration-200 placeholder:text-text-secondary/60 hover:border-primary/40 focus:ring-4 focus:outline-none motion-reduce:transition-none"
+              [class]="
+                mostrarErrorMotivo()
+                  ? 'border-red-700 focus:ring-red-700/10'
+                  : 'border-border focus:border-primary focus:ring-primary/10'
+              "
+              [attr.maxlength]="MOTIVO_MAXIMO"
+              [id]="id + '-motivo'"
+              [value]="motivo()"
+              [attr.aria-invalid]="mostrarErrorMotivo()"
+              [attr.aria-describedby]="
+                (mostrarErrorMotivo() ? id + '-error-motivo ' : '') + id + '-contador-motivo'
+              "
+              (input)="escribirMotivo($event)"
+              (blur)="tocar('motivo')"
+            ></textarea>
+            @if (mostrarErrorMotivo()) {
+              <p
+                [id]="id + '-error-motivo'"
+                class="flex items-start gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700 transition duration-200 starting:-translate-y-1 starting:opacity-0 motion-reduce:transition-none"
+                role="alert"
+              >
+                <svg
+                  class="mt-0.5 size-4 shrink-0"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 7.5v5M12 16h.01" />
+                </svg>
+                {{ errorMotivo() }}
+              </p>
+            }
+          </div>
+        </div>
+      </section>
+
+      <!-- Recursos (C4-18): disponibilidad de la primera fecha; el backend comprueba el resto de la serie. -->
+      <app-recursos-de-reserva
+        [fecha]="errorHorario() ? '' : fecha()"
+        [horaInicio]="errorHorario() ? '' : inicio()"
+        [horaFin]="errorHorario() ? '' : fin()"
+        (recursosChange)="recursos.set($event)"
+      />
+    </div>
+
+    <!-- Resumen, disponibilidad y envío -->
+    <aside class="min-w-0 @4xl:sticky @4xl:top-6">
+      <section
+        class="rounded-xl border border-border bg-surface shadow-sm"
+        [attr.aria-labelledby]="id + '-resumen-titulo'"
+      >
+        <div class="flex items-center gap-2.5 border-b border-border px-5 py-3.5">
+          <span class="size-1.5 rounded-[1px] bg-accent-gold" aria-hidden="true"></span>
+          <h2 [id]="id + '-resumen-titulo'" class="text-[15px] font-semibold text-primary-dark">
+            Tu solicitud
+          </h2>
+        </div>
+
+        <div class="flex flex-col gap-4 px-5 py-4">
+          <dl class="flex flex-col gap-2.5 text-sm">
+            <div class="flex justify-between gap-4">
+              <dt class="text-text-secondary">Espacio</dt>
+              <dd class="text-right font-medium text-primary-dark">
+                {{
+                  espacio()
+                    ? espacio()!.codigo + ' · ' + espacio()!.nombre
+                    : espacioId() !== null
+                      ? 'n.º ' + espacioId()
+                      : '—'
+                }}
+              </dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-text-secondary">{{ fechas().length > 1 ? 'Fechas' : 'Fecha' }}</dt>
+              <dd class="text-right font-medium text-primary-dark">{{ resumenFechas() || '—' }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-text-secondary">Horario</dt>
+              <dd class="text-right font-medium text-primary-dark tabular-nums">
+                {{ errorHorario() ? '—' : inicio() + '–' + fin() }}
+              </dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-text-secondary">Asistentes</dt>
+              <dd class="text-right font-medium text-primary-dark tabular-nums">
+                {{ errorAsistentes() ? '—' : asistentes() }}
+              </dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-text-secondary">Recursos</dt>
+              <dd class="text-right font-medium text-primary-dark tabular-nums">
+                {{
+                  totalRecursos()
+                    ? totalRecursos() + (totalRecursos() === 1 ? ' unidad' : ' unidades')
+                    : 'Ninguno'
+                }}
+              </dd>
+            </div>
+          </dl>
+
+          <!-- TEMPORAL: resultado sencillo hasta que exista app-validacion-disponibilidad (C4-07),
+               que recibirá [resultado]="resultado()". -->
+          <div aria-live="polite">
+            @switch (estadoValidacion().tipo) {
+              @case ('validando') {
+                <p
+                  class="flex items-center gap-2.5 rounded-xl bg-muted px-4 py-3 text-sm text-primary-dark"
+                >
+                  <svg
+                    class="size-4 shrink-0 text-primary motion-safe:animate-spin"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.4"
+                    stroke-linecap="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 3a9 9 0 1 0 9 9" />
+                  </svg>
+                  Comprobando la disponibilidad…
+                </p>
+              }
+              @case ('sin-servicio') {
+                <p
+                  class="flex items-start gap-2.5 rounded-xl bg-muted px-4 py-3 text-sm text-primary-dark"
+                >
+                  <svg
+                    class="mt-0.5 size-4 shrink-0 text-primary"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M12 11v5M12 8h.01" />
+                  </svg>
+                  No se pudo comprobar la disponibilidad: la consulta de ocupación todavía no está
+                  conectada.
+                </p>
+              }
+              @case ('error') {
+                <div
+                  class="flex flex-col items-start gap-2 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+                >
+                  No se pudo comprobar la disponibilidad.
+                  <button
+                    type="button"
+                    class="min-h-9 rounded-full border border-red-700/30 bg-surface px-3.5 font-semibold transition-colors hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
+                    (click)="reintentar()"
+                  >
+                    Volver a comprobar
+                  </button>
+                </div>
+              }
+              @case ('listo') {
+                @if (resultado()!.disponible) {
+                  <p
+                    class="flex items-start gap-2.5 rounded-xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 transition duration-200 starting:opacity-0 motion-reduce:transition-none"
+                  >
+                    <svg
+                      class="mt-0.5 size-4 shrink-0"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.4"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="m5 12.5 4.5 4.5L19 7.5" />
+                    </svg>
+                    {{
+                      fechas().length === 1
+                        ? 'El espacio está libre en ese horario.'
+                        : 'El espacio está libre en las ' + fechas().length + ' fechas.'
+                    }}
+                  </p>
+                } @else {
+                  <div
+                    class="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 transition duration-200 starting:opacity-0 motion-reduce:transition-none"
+                  >
+                    <p class="flex items-start gap-2.5 font-medium">
+                      <svg
+                        class="mt-0.5 size-4 shrink-0"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.4"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M7 7l10 10M17 7 7 17" />
+                      </svg>
+                      {{
+                        fechas().length === 1
+                          ? 'El espacio no está libre en ese horario.'
+                          : conflictos() +
+                            ' de ' +
+                            fechas().length +
+                            ' fechas tienen conflicto; revísalas en «Fechas de la serie».'
+                      }}
+                    </p>
+                    @if (fechas().length === 1) {
+                      <ul class="mt-1.5 flex flex-col gap-1 pl-6.5">
+                        @for (c of ocurrencias()[0].conflictos; track $index) {
+                          <li>
+                            {{ c.ocupacion.tipo === 'CLASE' ? 'Clase' : 'Reserva' }}
+                            {{ c.ocupacion.titulo }},
+                            <span class="tabular-nums"
+                              >{{ c.ocupacion.hora_inicio }}–{{ c.ocupacion.hora_fin }}</span
+                            >{{
+                              c.motivo === 'SEPARACION' ? ' (sin los 15 min de separación)' : ''
+                            }}
+                          </li>
+                        }
+                      </ul>
+                    }
+                    <!-- TEMPORAL: aquí irá app-espacios-alternativos (C4-08) con la solicitud y
+                         (elegir)="usarEspacio($event)". -->
+                    <p class="mt-2 pl-6.5 text-primary-dark">
+                      Cambia el horario o elige otro espacio.
+                    </p>
+                  </div>
+                }
+              }
+            }
+          </div>
+
+          <!-- TEMPORAL: botón propio hasta que exista app-boton-enviar-aprobacion (G5). -->
+          @switch (estadoEnvio().tipo) {
+            @case ('enviada') {
+              <div
+                class="flex flex-col items-start gap-3 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700 transition duration-200 starting:-translate-y-1 starting:opacity-0 motion-reduce:transition-none"
+                role="status"
+              >
+                <p class="font-semibold">Solicitud enviada. Queda pendiente de aprobación.</p>
+                <button
+                  type="button"
+                  class="min-h-10 rounded-lg border border-border bg-surface px-4 font-semibold text-primary transition-colors hover:bg-header focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  (click)="nuevaSolicitud()"
+                >
+                  Nueva solicitud
+                </button>
+              </div>
+            }
+            @case ('sin-servicio') {
+              <p
+                class="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+                role="alert"
+              >
+                No se pudo enviar: el registro de solicitudes todavía no está conectado.
+              </p>
+            }
+            @case ('error') {
+              <p
+                class="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+                role="alert"
+              >
+                No se pudo enviar la solicitud. Vuelve a intentarlo.
+              </p>
+            }
+          }
+
+          @if (estadoEnvio().tipo !== 'enviada') {
+            <div class="flex flex-col gap-2">
+              <button
+                type="submit"
+                class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary active:bg-primary-dark disabled:cursor-not-allowed disabled:bg-primary/40 disabled:shadow-none motion-reduce:transition-none"
+                [disabled]="!envioHabilitado()"
+                [attr.aria-describedby]="motivoBloqueo() ? id + '-bloqueo' : null"
+              >
+                {{ estadoEnvio().tipo === 'enviando' ? 'Enviando…' : 'Enviar a aprobación' }}
+              </button>
+              @if (motivoBloqueo()) {
+                <p [id]="id + '-bloqueo'" class="text-xs text-text-secondary">
+                  {{ motivoBloqueo() }}
+                </p>
+              }
+            </div>
+          }
+        </div>
+      </section>
+    </aside>
+  </form>
+</div>

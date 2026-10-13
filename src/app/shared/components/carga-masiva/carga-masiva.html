@@ -1,0 +1,89 @@
+<section aria-label="Asistente de carga masiva">
+  <ol class="mb-6 flex flex-wrap gap-2 text-sm">
+    @for (nombre of pasos; track nombre; let i = $index) {
+      <li
+        class="flex items-center gap-2 rounded-full border px-3 py-1"
+        [class]="
+          paso() === i + 1
+            ? 'border-primary bg-primary text-white'
+            : paso() > i + 1
+              ? 'border-border bg-muted text-primary-dark'
+              : 'border-border bg-surface text-text-secondary'
+        "
+        [attr.aria-current]="paso() === i + 1 ? 'step' : null"
+      >
+        <span class="font-semibold">{{ i + 1 }}</span>
+        {{ nombre }}
+      </li>
+    }
+  </ol>
+
+  @switch (paso()) {
+    @case (1) {
+      <app-descarga-plantilla [config]="config()" />
+      <div class="mt-4 flex justify-end">
+        <button
+          type="button"
+          class="rounded-md bg-primary px-4 py-2 font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          (click)="irAPaso(2)"
+        >
+          Ya tengo mi archivo
+        </button>
+      </div>
+    }
+    @case (2) {
+      <app-subir-archivo
+        [extensiones]="extensiones()"
+        [tamanoMaxMB]="tamanoMaxMB()"
+        (filasLeidas)="recibirFilas($event)"
+        (error)="mostrarError($event)"
+      />
+      @if (errorArchivo()) {
+        <p role="alert" class="mt-3 text-sm text-accent">{{ errorArchivo() }}</p>
+      }
+      <div class="mt-4">
+        <button
+          type="button"
+          class="text-sm font-medium text-primary hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          (click)="irAPaso(1)"
+        >
+          Atrás
+        </button>
+      </div>
+    }
+    @case (3) {
+      <app-previsualizacion-carga
+        [columnas]="config().columnas"
+        [filas]="filas()"
+        [faltantes]="faltantes()"
+      />
+      @if (errorImportar()) {
+        <p role="alert" class="mt-3 text-sm text-accent">
+          No se pudo completar la importación. Inténtalo de nuevo.
+        </p>
+      }
+      <div class="mt-4 flex items-center justify-between gap-3">
+        <button
+          type="button"
+          class="text-sm font-medium text-primary hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          (click)="irAPaso(2)"
+        >
+          Elegir otro archivo
+        </button>
+        <button
+          type="button"
+          class="rounded-md bg-primary px-4 py-2 font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50"
+          [disabled]="!puedeImportar()"
+          (click)="importar()"
+        >
+          {{ importando() ? 'Importando...' : 'Importar ' + validas() + ' filas válidas' }}
+        </button>
+      </div>
+    }
+    @case (4) {
+      @if (resumen(); as r) {
+        <app-resumen-importacion [resumen]="r" (nuevaCarga)="nuevaCarga()" />
+      }
+    }
+  }
+</section>

@@ -1,0 +1,164 @@
+<div
+  role="group"
+  [attr.aria-labelledby]="id + '-titulo'"
+  class="@container min-w-0"
+  [class]="enmarcado() ? 'rounded-xl border border-border bg-surface shadow-sm' : ''"
+>
+  <div
+    class="flex items-center gap-2.5 border-b border-border px-5 py-3.5"
+    [class.sr-only]="!enmarcado()"
+  >
+    <span class="size-1.5 rounded-[1px] bg-accent-gold" aria-hidden="true"></span>
+    <h3 [id]="id + '-titulo'" class="text-[15px] font-semibold text-primary-dark">
+      {{ etiqueta() }}
+    </h3>
+  </div>
+
+  <div [class]="enmarcado() ? 'px-5 py-4' : ''">
+    <div
+      class="grid items-end gap-4 @md:grid-cols-2"
+      [class]="
+        periodosValidos().length
+          ? '@3xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.4fr)_auto]'
+          : '@3xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]'
+      "
+    >
+      <div class="flex min-w-0 flex-col gap-1.5">
+        <label class="text-sm font-medium text-primary-dark" [for]="id + '-desde'">Desde</label>
+        <app-campo-fecha
+          nombre="desde"
+          [idCampo]="id + '-desde'"
+          [min]="fechaMin()"
+          [max]="hasta() || fechaMax()"
+          [otroExtremo]="hasta()"
+          nombreExtremo="Hasta"
+          [sinFinesDeSemana]="sinFinesDeSemana()"
+          [fechaHoy]="referencia()"
+          [valor]="desde()"
+          [invalido]="campoInvalido('desde')"
+          [describedBy]="campoInvalido('desde') ? id + '-error' : null"
+          (valorChange)="cambiarDesde($event)"
+        />
+      </div>
+
+      <div class="flex min-w-0 flex-col gap-1.5">
+        <label class="text-sm font-medium text-primary-dark" [for]="id + '-hasta'">Hasta</label>
+        <app-campo-fecha
+          nombre="hasta"
+          [idCampo]="id + '-hasta'"
+          [min]="desde() || fechaMin()"
+          [max]="fechaMax()"
+          [otroExtremo]="desde()"
+          nombreExtremo="Desde"
+          [sinFinesDeSemana]="sinFinesDeSemana()"
+          [fechaHoy]="referencia()"
+          [valor]="hasta()"
+          [invalido]="campoInvalido('hasta')"
+          [describedBy]="campoInvalido('hasta') ? id + '-error' : null"
+          (valorChange)="cambiarHasta($event)"
+        />
+      </div>
+
+      @if (periodosValidos().length) {
+        <div class="flex min-w-0 flex-col gap-1.5 @md:col-span-2 @3xl:col-span-1">
+          <label class="text-sm font-medium text-primary-dark" [for]="id + '-periodo'"
+            >Período</label
+          >
+          <app-campo-seleccion
+            vacio="Elegir período…"
+            [idCampo]="id + '-periodo'"
+            [opciones]="opcionesPeriodo()"
+            [valor]="periodoActivo()"
+            (valorChange)="elegirPeriodo($event)"
+          />
+        </div>
+      }
+
+      <div
+        class="flex flex-wrap items-end gap-2 @md:col-span-2 @md:justify-end @3xl:col-span-1"
+        role="group"
+        aria-label="Atajos de fechas"
+      >
+        @for (atajo of atajos(); track atajo.id) {
+          <button
+            type="button"
+            class="inline-flex min-h-11 items-center gap-1.5 rounded-full border px-4 text-sm font-medium transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary motion-safe:active:scale-95 motion-reduce:transition-none"
+            [class]="
+              mismoRango(atajo.rango, rango())
+                ? 'border-primary bg-primary text-white shadow-md shadow-primary/25 hover:bg-accent'
+                : 'border-border bg-surface text-primary-dark motion-safe:hover:-translate-y-0.5 hover:border-primary/40 hover:bg-muted hover:text-primary hover:shadow-sm'
+            "
+            [attr.aria-pressed]="mismoRango(atajo.rango, rango())"
+            (click)="aplicar(atajo.rango)"
+          >
+            @if (mismoRango(atajo.rango, rango())) {
+              <svg
+                class="size-3.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="m5 12.5 4.5 4.5L19 7.5" />
+              </svg>
+            }
+            {{ atajo.etiqueta }}
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (error()) {
+      <p
+        [id]="id + '-error'"
+        class="mt-3 flex items-start gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700 transition duration-200 starting:-translate-y-1 starting:opacity-0 motion-reduce:transition-none"
+        role="alert"
+      >
+        <svg
+          class="mt-0.5 size-4 shrink-0"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 7.5v5M12 16h.01" />
+        </svg>
+        {{ error() }}
+      </p>
+    } @else if (dias() && mostrarResumen()) {
+      <p
+        class="mt-3 inline-flex items-start gap-2 rounded-xl bg-muted px-3 py-1.5 text-sm @md:rounded-full text-primary-dark transition duration-200 starting:-translate-y-1 starting:opacity-0 motion-reduce:transition-none"
+        aria-live="polite"
+      >
+        <svg
+          class="mt-0.5 size-4 shrink-0 text-primary"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.9"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+          <path d="M3.5 9.5h17M8 3v4M16 3v4" />
+        </svg>
+        <span>
+          <span class="font-medium"
+            >{{ fechaLegible(rango().desde) }} – {{ fechaLegible(rango().hasta) }}</span
+          >
+          <span class="ml-1 whitespace-nowrap text-text-secondary"
+            >· {{ dias() }} {{ dias() === 1 ? 'día' : 'días' }}</span
+          >
+        </span>
+      </p>
+    }
+  </div>
+</div>

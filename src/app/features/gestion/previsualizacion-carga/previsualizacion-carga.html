@@ -1,0 +1,66 @@
+<div class="rounded-lg border border-border bg-surface p-5">
+  <h2 class="font-semibold text-primary-dark">Revisa los datos</h2>
+
+  @if (faltantes().length > 0) {
+    <p role="alert" class="mt-3 rounded-md bg-muted p-3 text-sm text-accent">
+      Al archivo le faltan columnas obligatorias: {{ faltantes().join(', ') }}. Descarga la
+      plantilla y vuelve a intentarlo.
+    </p>
+  }
+
+  <p class="mt-2 text-sm text-text-secondary" role="status">
+    {{ filas().length }} filas · <strong class="text-primary-dark">{{ validas() }} válidas</strong>
+    ·
+    <strong [class]="conErrores() > 0 ? 'text-accent' : 'text-primary-dark'">
+      {{ conErrores() }} con errores
+    </strong>
+    (las filas con errores no se importan).
+  </p>
+
+  @if (conErrores() > 0) {
+    <label class="mt-3 flex items-center gap-2 text-sm text-primary-dark">
+      <input type="checkbox" class="accent-primary" (change)="alternarSoloErrores($event)" />
+      Mostrar solo filas con errores
+    </label>
+  }
+
+  <div class="mt-4 overflow-x-auto rounded-lg border border-border">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-table-header text-brand">
+        <tr>
+          <th scope="col" class="px-3 py-2 font-semibold">Fila</th>
+          @for (c of columnas(); track c.clave) {
+            <th scope="col" class="px-3 py-2 font-semibold">{{ c.etiqueta }}</th>
+          }
+          <th scope="col" class="px-3 py-2 font-semibold">Estado</th>
+          <th scope="col" class="px-3 py-2 font-semibold">Motivo</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (f of visibles(); track f.numero) {
+          <tr class="border-b border-border last:border-b-0" [class.bg-muted]="!f.valida">
+            <td class="px-3 py-2 text-text-secondary">{{ f.numero }}</td>
+            @for (c of columnas(); track c.clave) {
+              <td class="px-3 py-2 text-primary-dark">{{ f.datos[c.clave] }}</td>
+            }
+            <td class="px-3 py-2">
+              <span
+                class="inline-block rounded-full px-2 py-0.5 text-xs font-semibold"
+                [class]="f.valida ? 'bg-muted text-primary-dark' : 'bg-accent text-white'"
+              >
+                {{ f.valida ? 'OK' : 'Error' }}
+              </span>
+            </td>
+            <td class="px-3 py-2 text-accent">{{ f.errores.join(' ') }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (filas().length > limite) {
+    <p class="mt-2 text-xs text-text-secondary">
+      Se muestran las primeras {{ limite }} filas; todas se validan e importan.
+    </p>
+  }
+</div>

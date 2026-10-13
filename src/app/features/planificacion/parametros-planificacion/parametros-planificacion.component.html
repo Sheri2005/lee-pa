@@ -1,0 +1,212 @@
+@let estado = vista();
+
+<section
+  class="space-y-4 rounded-xl border border-border bg-surface p-4"
+  aria-label="Parámetros de la planificación"
+  [attr.aria-busy]="estado.tipo === 'cargando' || guardando()"
+>
+  <header>
+    <h2 class="text-lg font-semibold text-primary-dark">Parámetros de la planificación</h2>
+    <p class="text-sm text-text-secondary">
+      Define qué niveles se ofertan, el cupo máximo por paralelo y el mínimo de estudiantes para
+      abrir un paralelo.
+    </p>
+  </header>
+
+  @switch (estado.tipo) {
+    @case ('cargando') {
+      <app-spinner-carga tipo="esqueleto" [filas]="4" mensaje="Cargando parámetros…" />
+    }
+    @case ('error') {
+      <div class="space-y-3 rounded-lg border border-border bg-muted p-4">
+        <p role="alert" class="text-sm text-primary-dark">
+          No se pudieron cargar los parámetros de esta planificación.
+        </p>
+        <button
+          type="button"
+          class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          (click)="reintentar()"
+        >
+          Reintentar
+        </button>
+      </div>
+    }
+    @case ('listo') {
+      @if (!editable()) {
+        <p role="status" class="rounded-lg bg-muted p-3 text-sm text-primary-dark">
+          Esta planificación está en estado {{ planificacion().estado }}: los parámetros son de solo
+          lectura.
+        </p>
+      }
+
+      <form class="space-y-6" novalidate (submit)="$event.preventDefault(); guardar()">
+        <!-- EDITAR (G1): reemplazar este <fieldset> de casillas por
+             <app-selector-nivel [niveles]="..." (nivelesChange)="..." /> y la lista de materias de
+             cada nivel por <app-malla-por-niveles [mallaId]="planificacion().malla.id" />.
+             Al reemplazarlo, borrar alternarNivel/elegirTodos/quitarTodos del .ts si ya no se usan. -->
+        <fieldset
+          class="space-y-3"
+          [attr.aria-describedby]="errorNiveles() ? 'err-niveles-' + idCupo : null"
+        >
+          <legend class="text-sm font-medium text-primary-dark">
+            Niveles a ofertar
+            <span class="font-normal text-text-secondary">
+              · malla {{ planificacion().malla.nombre }} ({{ planificacion().malla.anioInicio }})
+            </span>
+          </legend>
+
+          @if (editable()) {
+            <div class="flex flex-wrap gap-2">
+              <button
+                type="button"
+                class="rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-primary-dark hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+                [disabled]="guardando()"
+                (click)="elegirTodos()"
+              >
+                Seleccionar todos
+              </button>
+              <button
+                type="button"
+                class="rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-primary-dark hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+                [disabled]="guardando()"
+                (click)="quitarTodos()"
+              >
+                Quitar todos
+              </button>
+            </div>
+          }
+
+          <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            @for (nivel of niveles(); track nivel.nivel) {
+              <li
+                class="rounded-lg border bg-filter p-3"
+                [class]="estaElegido(nivel.nivel) ? 'border-primary' : 'border-border'"
+              >
+                <label class="flex items-start gap-2 text-sm font-medium text-primary-dark">
+                  <input
+                    type="checkbox"
+                    class="mt-0.5 size-4 accent-primary"
+                    [checked]="estaElegido(nivel.nivel)"
+                    [disabled]="!editable() || guardando()"
+                    (change)="alternarNivel(nivel.nivel)"
+                  />
+                  <span>
+                    Nivel {{ nivel.nivel }}
+                    <span class="block text-xs font-normal text-text-secondary">
+                      {{ nivel.materias.length }} materias
+                    </span>
+                  </span>
+                </label>
+                <details class="mt-2 text-xs text-text-secondary">
+                  <summary
+                    class="cursor-pointer text-brand focus-visible:outline-2 focus-visible:outline-primary"
+                  >
+                    Ver materias
+                  </summary>
+                  <ul class="mt-1 space-y-0.5">
+                    @for (materia of nivel.materias; track materia.codigo) {
+                      <li>
+                        <span class="font-mono">{{ materia.codigo }}</span> · {{ materia.nombre }} ·
+                        {{ materia.horasSemanales }} h
+                      </li>
+                    }
+                  </ul>
+                </details>
+              </li>
+            }
+          </ul>
+
+          @if (errorNiveles()) {
+            <p [id]="'err-niveles-' + idCupo" role="alert" class="text-sm text-accent">
+              {{ errorNiveles() }}
+            </p>
+          } @else {
+            <p role="status" class="text-sm font-medium text-brand">
+              {{ resumen().niveles }} {{ resumen().niveles === 1 ? 'nivel' : 'niveles' }} ·
+              {{ resumen().materias }} materias · {{ resumen().horas }} h/sem en la malla
+            </p>
+          }
+        </fieldset>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label [for]="idCupo" class="block text-sm font-medium text-primary-dark">
+              Cupo máximo por paralelo
+            </label>
+            <input
+              [id]="idCupo"
+              type="number"
+              min="1"
+              [max]="cupoMaximoPermitido"
+              step="1"
+              inputmode="numeric"
+              class="mt-1 w-full rounded-md border bg-surface px-3 py-2 text-sm text-primary-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+              [class]="errorCupo() ? 'border-accent' : 'border-border'"
+              [value]="cupoTexto()"
+              [disabled]="!editable() || guardando()"
+              [attr.aria-invalid]="errorCupo() ? 'true' : null"
+              [attr.aria-describedby]="errorCupo() ? idCupo + '-error' : null"
+              (input)="alCambiarCupo($any($event.target).value)"
+            />
+            @if (errorCupo()) {
+              <p [id]="idCupo + '-error'" role="alert" class="mt-1 text-sm text-accent">
+                {{ errorCupo() }}
+              </p>
+            }
+          </div>
+
+          <div>
+            <label [for]="idMinimo" class="block text-sm font-medium text-primary-dark">
+              Mínimo de estudiantes para abrir
+            </label>
+            <input
+              [id]="idMinimo"
+              type="number"
+              min="1"
+              step="1"
+              inputmode="numeric"
+              class="mt-1 w-full rounded-md border bg-surface px-3 py-2 text-sm text-primary-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+              [class]="errorMinimo() ? 'border-accent' : 'border-border'"
+              [value]="minimoTexto()"
+              [disabled]="!editable() || guardando()"
+              [attr.aria-invalid]="errorMinimo() ? 'true' : null"
+              [attr.aria-describedby]="errorMinimo() ? idMinimo + '-error' : null"
+              (input)="alCambiarMinimo($any($event.target).value)"
+            />
+            @if (errorMinimo()) {
+              <p [id]="idMinimo + '-error'" role="alert" class="mt-1 text-sm text-accent">
+                {{ errorMinimo() }}
+              </p>
+            }
+          </div>
+        </div>
+
+        @if (errorGuardado()) {
+          <p role="alert" class="rounded-lg border border-accent p-3 text-sm text-accent">
+            {{ errorGuardado() }}
+          </p>
+        }
+        @if (mensaje()) {
+          <p role="status" class="rounded-lg bg-muted p-3 text-sm text-primary-dark">
+            {{ mensaje() }}
+          </p>
+        }
+
+        @if (editable()) {
+          <div class="flex flex-wrap items-center gap-3">
+            <button
+              type="submit"
+              class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+              [disabled]="!puedeGuardar()"
+            >
+              {{ guardando() ? 'Guardando…' : 'Guardar parámetros' }}
+            </button>
+            @if (hayCambios() && !guardando()) {
+              <span class="text-sm text-text-secondary">Hay cambios sin guardar.</span>
+            }
+          </div>
+        }
+      </form>
+    }
+  }
+</section>

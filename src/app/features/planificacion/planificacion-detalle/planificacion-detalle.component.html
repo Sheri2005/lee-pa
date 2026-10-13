@@ -1,0 +1,217 @@
+@let estado = vista();
+
+<div class="space-y-4">
+  <a
+    routerLink="/planificacion"
+    class="inline-block text-sm text-brand hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+  >
+    ← Volver a planificaciones
+  </a>
+
+  @switch (estado.tipo) {
+    @case ('cargando') {
+      <section class="rounded-xl border border-border bg-surface p-4" aria-busy="true">
+        <app-spinner-carga tipo="esqueleto" [filas]="5" mensaje="Cargando planificación…" />
+      </section>
+    }
+    @case ('error') {
+      <section class="space-y-3 rounded-xl border border-border bg-muted p-4">
+        @if (estado.motivo === 'invalido') {
+          <p role="alert" class="text-sm text-primary-dark">
+            El identificador de la planificación no es válido.
+          </p>
+        } @else {
+          <p role="alert" class="text-sm text-primary-dark">
+            No se encontró la planificación o no se pudo cargar. Intenta nuevamente.
+          </p>
+          <button
+            type="button"
+            class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            (click)="reintentar()"
+          >
+            Reintentar
+          </button>
+        }
+      </section>
+    }
+    @case ('listo') {
+      @let p = estado.planificacion;
+
+      <!-- EDITAR (C3-23): reemplazar este <header> por
+           <app-encabezado-pagina titulo="Planificación" subtitulo="..." /> cuando G3 lo publique. -->
+      <header>
+        <h1 class="text-2xl font-semibold text-primary-dark">
+          Planificación {{ p.carrera.nombre }}
+        </h1>
+        <p class="text-sm text-text-secondary">
+          Período {{ p.periodo.codigo }}. Completa los pasos en orden y envía la planificación a
+          aprobación.
+        </p>
+      </header>
+
+      <!-- C2-04: muestra carrera, facultad, período, malla y estado. -->
+      <app-planificacion-encabezado [planificacion]="p" />
+
+      @if (!editable()) {
+        <p role="status" class="rounded-lg bg-muted p-3 text-sm text-primary-dark">
+          Esta planificación está en estado {{ p.estado }}: se muestra en modo de solo lectura.
+        </p>
+      }
+
+      <!-- Pasos (patrón de pestañas accesible) -->
+      <div class="rounded-xl border border-border bg-surface">
+        <div
+          role="tablist"
+          aria-label="Pasos de la planificación"
+          class="flex gap-1 overflow-x-auto border-b border-border bg-table-header px-2 pt-2"
+        >
+          @for (paso of pasos; track paso.id; let i = $index) {
+            <button
+              type="button"
+              role="tab"
+              class="shrink-0 rounded-t-md border border-b-0 px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              [class]="
+                pasoActivo() === paso.id
+                  ? 'border-border bg-surface font-semibold text-primary'
+                  : 'border-transparent text-text-secondary hover:bg-muted hover:text-primary-dark'
+              "
+              [id]="idTab(paso.id)"
+              [attr.aria-selected]="pasoActivo() === paso.id"
+              [attr.aria-controls]="idPanel(paso.id)"
+              [attr.tabindex]="pasoActivo() === paso.id ? 0 : -1"
+              (click)="irAPaso(paso.id)"
+              (keydown)="alTeclear($event)"
+            >
+              <span class="mr-1 text-xs text-text-secondary">{{ i + 1 }}.</span>{{ paso.etiqueta }}
+            </button>
+          }
+        </div>
+
+        <div
+          role="tabpanel"
+          tabindex="0"
+          class="p-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          [id]="idPanel(pasoActivo())"
+          [attr.aria-labelledby]="idTab(pasoActivo())"
+        >
+          @switch (pasoActivo()) {
+            @case ('parametros') {
+              <!-- C2-05 -->
+              <app-parametros-planificacion
+                [planificacion]="p"
+                (parametrosChange)="alCambiarParametros($event)"
+              />
+            }
+
+            @case ('estudiantes') {
+              <!-- EDITAR (G2): reemplazar este bloque por <app-estudiantes-estimados [planificacionId]="p.id" />
+                   e importar EstudiantesEstimadosComponent en el .ts. Ajustar al contrato real del
+                   componente (puede recibir parametrosVigentes()). -->
+              <div
+                role="status"
+                class="rounded-lg border border-dashed border-accent-gold bg-muted p-4 text-sm text-primary-dark"
+              >
+                Aquí irá <code>app-estudiantes-estimados</code>, aún no publicado.
+              </div>
+            }
+
+            @case ('cursos') {
+              <!-- EDITAR (C2-08): reemplazar este bloque por <app-sugerencia-cursos [planificacionId]="p.id" />
+                   e importar SugerenciaCursosComponent en el .ts. C2-08 ya incluye a
+                   app-materias-a-planificar (C2-07), que existe: no se monta aquí directamente. -->
+              <div
+                role="status"
+                class="rounded-lg border border-dashed border-accent-gold bg-muted p-4 text-sm text-primary-dark"
+              >
+                Aquí irá <code>app-sugerencia-cursos</code> (C2-08), aún no publicado.
+              </div>
+            }
+
+            @case ('paralelos') {
+              <!-- EDITAR (G2): reemplazar este bloque por <app-paralelos-editor [planificacionId]="p.id" />
+                   e importar ParalelosEditorComponent en el .ts. Ajustar al contrato real. -->
+              <div
+                role="status"
+                class="rounded-lg border border-dashed border-accent-gold bg-muted p-4 text-sm text-primary-dark"
+              >
+                Aquí irá <code>app-paralelos-editor</code>, aún no publicado.
+              </div>
+            }
+
+            @case ('docentes') {
+              <!-- C2-13. Sin (asignacionChange): el componente ya muestra su propio mensaje de éxito.
+                   EDITAR (G5): al publicarse app-historial-trazabilidad, refrescarlo con esa salida. -->
+              <app-asignacion-docentes [planificacionId]="p.id" />
+            }
+
+            @case ('compartidas') {
+              <div class="space-y-4">
+                <!-- EDITAR (C2-17): reemplazar este bloque por <app-materias-compartidas [planificacionId]="p.id" />
+                     e importar MateriasCompartidasComponent en el .ts. -->
+                <div
+                  role="status"
+                  class="rounded-lg border border-dashed border-accent-gold bg-muted p-4 text-sm text-primary-dark"
+                >
+                  Aquí irá <code>app-materias-compartidas</code> (C2-17), aún no publicado.
+                </div>
+
+                <!-- EDITAR (G2): reemplazar este bloque por <app-solicitudes-cupos-recibidas [planificacionId]="p.id" />
+                     e importar SolicitudesCuposRecibidasComponent en el .ts. -->
+                <div
+                  role="status"
+                  class="rounded-lg border border-dashed border-accent-gold bg-muted p-4 text-sm text-primary-dark"
+                >
+                  Aquí irá <code>app-solicitudes-cupos-recibidas</code>, aún no publicado.
+                </div>
+              </div>
+            }
+
+            @case ('aprobacion') {
+              <!-- EDITAR (G5): reemplazar este bloque por <app-boton-enviar-aprobacion [planificacionId]="p.id" />
+                   e importar BotonEnviarAprobacionComponent en el .ts. Ajustar al contrato real
+                   (estado actual, deshabilitar si no es BORRADOR o CON_CAMBIOS). -->
+              <div
+                role="status"
+                class="rounded-lg border border-dashed border-accent-gold bg-muted p-4 text-sm text-primary-dark"
+              >
+                Aquí irá <code>app-boton-enviar-aprobacion</code> (G5), aún no publicado.
+              </div>
+            }
+          }
+        </div>
+
+        <div class="flex items-center justify-between gap-3 border-t border-border p-3">
+          <button
+            type="button"
+            class="rounded-md border border-border bg-surface px-4 py-2 text-sm text-primary-dark hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+            [disabled]="esPrimero()"
+            (click)="anterior()"
+          >
+            ← Anterior
+          </button>
+          <span class="text-sm text-text-secondary"
+            >Paso {{ indiceActivo() + 1 }} de {{ pasos.length }}</span
+          >
+          <button
+            type="button"
+            class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+            [disabled]="esUltimo()"
+            (click)="siguiente()"
+          >
+            Siguiente →
+          </button>
+        </div>
+      </div>
+
+      <!-- Trazabilidad -->
+      <!-- EDITAR (G5): reemplazar este bloque por <app-historial-trazabilidad [planificacionId]="p.id" />
+           e importar HistorialTrazabilidadComponent en el .ts. -->
+      <section
+        class="rounded-xl border border-dashed border-accent-gold bg-muted p-4 text-sm text-primary-dark"
+        aria-label="Trazabilidad"
+      >
+        Aquí irá <code>app-historial-trazabilidad</code> (G5), aún no publicado.
+      </section>
+    }
+  }
+</div>

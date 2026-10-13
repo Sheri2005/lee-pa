@@ -1,0 +1,172 @@
+@let estado = vista();
+<section
+  class="space-y-4 rounded-xl border border-border bg-surface p-4"
+  aria-label="Asignación de docentes"
+  [attr.aria-busy]="estado.tipo === 'cargando' || guardando()"
+>
+  <header>
+    <h2 class="text-lg font-semibold text-primary-dark">Asignación de docentes</h2>
+    <p class="text-sm text-text-secondary">
+      Acepta una sugerencia o selecciona otro docente para cada paralelo.
+    </p>
+  </header>
+  @if (mensaje()) {
+    <p role="status" class="rounded bg-muted p-3">{{ mensaje() }}</p>
+  }
+  @if (errorGuardado()) {
+    <p role="alert" class="rounded border border-accent p-3 text-accent">{{ errorGuardado() }}</p>
+  }
+  @if (guardando()) {
+    <p role="status">Confirmando asignación…</p>
+  }
+
+  @switch (estado.tipo) {
+    @case ('cargando') {
+      <app-spinner-carga mensaje="Cargando asignaciones" />
+    }
+    @case ('error') {
+      <p role="alert">No se pudieron cargar las asignaciones de esta planificación.</p>
+      <button type="button" class="rounded bg-primary px-4 py-2 text-white" (click)="reintentar()">
+        Reintentar
+      </button>
+    }
+    @case ('listo') {
+      @if (!estado.panel.editable) {
+        <p class="rounded bg-muted p-3">Esta planificación es de solo lectura.</p>
+      }
+      @if (estado.panel.filas.length === 0) {
+        <app-estado-vacio mensaje="No hay paralelos en esta planificación." />
+      } @else {
+        <!-- EDITAR C4-20: reemplazar esta tabla de la vista por app-tabla-datos de G4. -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <caption class="sr-only">
+              Docente asignado y carga por paralelo
+            </caption>
+            <thead class="bg-table-header text-brand">
+              <tr>
+                <th scope="col" class="p-3">Paralelo</th>
+                <th scope="col" class="p-3">Docente</th>
+                <th scope="col" class="p-3">Estado</th>
+                <th scope="col" class="p-3">Carga actual</th>
+                <th scope="col" class="p-3">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (fila of estado.panel.filas; track fila.paralelo.id) {
+                <tr class="border-b border-border">
+                  <th scope="row" class="p-3 font-medium">
+                    {{ fila.paralelo.materia.nombre }} · {{ fila.paralelo.codigo }}<br />{{
+                      fila.paralelo.horasSemanales
+                    }}
+                    h/sem
+                  </th>
+                  <td class="p-3">{{ fila.paralelo.docente?.nombres ?? 'Sin docente' }}</td>
+                  <!-- EDITAR C5-08: usar app-estado-badge, acordando estados de asignación con G5. -->
+                  <td class="p-3">
+                    <span class="rounded bg-muted px-2 py-1">{{
+                      fila.paralelo.estadoDocente
+                    }}</span>
+                  </td>
+                  <td class="min-w-48 p-3">
+                    @if (fila.cargaActual !== null && fila.cargaMaxima !== null) {
+                      <app-indicador-carga-docente
+                        [asignadas]="fila.cargaActual"
+                        [maxima]="fila.cargaMaxima"
+                      />
+                    } @else {
+                      <span>Sin carga disponible</span>
+                    }
+                  </td>
+                  <td class="space-y-2 p-3">
+                    @if (estado.panel.editable) {
+                      @if (fila.paralelo.estadoDocente === 'SUGERIDO') {
+                        <button
+                          type="button"
+                          class="block rounded bg-primary px-3 py-2 text-white disabled:opacity-50"
+                          [disabled]="guardando()"
+                          (click)="aceptar(fila)"
+                        >
+                          Aceptar sugerencia
+                        </button>
+                      }
+                      <button
+                        type="button"
+                        class="rounded border border-primary px-3 py-2 disabled:opacity-50"
+                        [disabled]="guardando()"
+                        (click)="abrir(fila)"
+                      >
+                        Elegir o reasignar
+                      </button>
+                    } @else {
+                      <span>Solo lectura</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      @if (filaActiva(); as fila) {
+        <fieldset
+          class="space-y-4 rounded-lg border border-border p-4 disabled:opacity-50"
+          [disabled]="guardando()"
+        >
+          <legend class="font-semibold">
+            {{ fila.paralelo.materia.nombre }} · Paralelo {{ fila.paralelo.codigo }}
+          </legend>
+          <app-sugerencia-docente
+            [paraleloId]="fila.paralelo.id"
+            (docenteElegido)="elegirSugerencia($event)"
+          />
+          <!-- EDITAR C1-43: sustituir por app-selector-docente de G1, filtrado por materiaId. -->
+          <label class="block space-y-1">
+            <span>Selección manual</span>
+            <select
+              #selector
+              class="w-full rounded border border-border bg-surface p-2"
+              [value]="docenteManualId() ?? ''"
+              (change)="docenteManualId.set(selector.value ? +selector.value : null)"
+            >
+              <option value="">Selecciona un docente</option>
+              @for (opcion of fila.opcionesManuales; track opcion.docente.id) {
+                <option [value]="opcion.docente.id">
+                  {{ opcion.docente.nombres }} · Máximo {{ opcion.docente.cargaMaxima }} h
+                </option>
+              }
+            </select>
+          </label>
+          @if (opcionManual(); as opcion) {
+            <p>Carga proyectada al confirmar:</p>
+            <app-indicador-carga-docente
+              [asignadas]="opcion.cargaProyectada"
+              [maxima]="opcion.docente.cargaMaxima"
+            />
+            @if (opcion.cargaProyectada > opcion.docente.cargaMaxima) {
+              <p role="alert" class="text-accent">
+                No se puede confirmar: el docente quedaría sobrecargado.
+              </p>
+            }
+            <button
+              type="button"
+              class="rounded bg-primary px-4 py-2 text-white disabled:opacity-50"
+              [disabled]="guardando() || opcion.cargaProyectada > opcion.docente.cargaMaxima"
+              (click)="confirmarManual()"
+            >
+              Confirmar docente
+            </button>
+          }
+          <button
+            type="button"
+            class="rounded border border-border px-4 py-2"
+            (click)="paraleloActivo.set(null); docenteManualId.set(null)"
+          >
+            Cerrar
+          </button>
+        </fieldset>
+      }
+    }
+  }
+</section>

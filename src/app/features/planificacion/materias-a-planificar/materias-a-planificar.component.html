@@ -1,0 +1,119 @@
+@let estado = vista();
+
+<section
+  class="space-y-4 rounded-xl border border-border bg-surface p-4"
+  aria-label="Materias a planificar"
+  [attr.aria-busy]="estado.tipo === 'cargando'"
+>
+  <header>
+    <h2 class="text-lg font-semibold text-primary-dark">Materias a planificar</h2>
+    <p class="text-sm text-text-secondary">
+      Materias de la malla vigente, materias de las que tu carrera es responsable aunque no estén en
+      su malla y materias compartidas con otras carreras.
+    </p>
+  </header>
+
+  @switch (estado.tipo) {
+    @case ('cargando') {
+      <app-spinner-carga tipo="esqueleto" [filas]="5" mensaje="Cargando materias…" />
+    }
+    @case ('error') {
+      <div class="space-y-3 rounded-lg border border-border bg-muted p-4">
+        <p role="alert" class="text-sm text-primary-dark">
+          No se pudieron cargar las materias. Verifica la planificación e intenta nuevamente.
+        </p>
+        <button
+          type="button"
+          class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          (click)="reintentar()"
+        >
+          Reintentar
+        </button>
+      </div>
+    }
+    @case ('listo') {
+      @if (total() === 0) {
+        <app-estado-vacio icono="📚" mensaje="No hay materias para planificar todavía." />
+      } @else {
+        <p role="status" class="text-sm font-medium text-brand">
+          Materias en esta planificación: {{ total() }}
+        </p>
+
+        <!-- EDITAR (C4-20): cuando G4 publique app-tabla-datos, esta tabla se reemplaza por ese
+             componente (columnas configurables). Mientras tanto es una tabla simple con Tailwind. -->
+        <!-- El tooltip del indicador se desborda hacia abajo: en pantallas anchas no se recorta y, en
+             angostas (donde la tabla se desplaza), se deja espacio extra si hay compartidas. -->
+        <div
+          class="overflow-x-auto rounded-lg border border-border md:overflow-visible"
+          [class]="hayCompartidas() ? 'max-md:pb-28' : ''"
+        >
+          <table class="w-full border-collapse text-left text-sm">
+            <caption class="sr-only">
+              Materias que entran en la planificación, agrupadas por origen
+            </caption>
+            <thead class="bg-table-header text-brand">
+              <tr>
+                <th scope="col" class="px-4 py-2 font-semibold md:rounded-tl-lg">Código</th>
+                <th scope="col" class="px-4 py-2 font-semibold">Materia</th>
+                <th scope="col" class="px-4 py-2 font-semibold">Nivel</th>
+                <th scope="col" class="px-4 py-2 font-semibold">Horas/sem</th>
+                <th scope="col" class="px-4 py-2 font-semibold md:rounded-tr-lg">Responsable</th>
+              </tr>
+            </thead>
+
+            @for (grupo of grupos(); track grupo.origen) {
+              <tbody>
+                <tr class="bg-muted">
+                  <th scope="colgroup" colspan="5" class="px-4 py-2 text-left">
+                    <div class="sticky left-0 max-w-72 md:max-w-none">
+                      <span class="font-semibold text-primary-dark">{{ grupo.titulo }}</span>
+                      <span class="font-normal text-text-secondary">
+                        · {{ grupo.items.length }}</span
+                      >
+                      <span class="block text-xs font-normal text-text-secondary">
+                        {{ grupo.descripcion }}
+                      </span>
+                    </div>
+                  </th>
+                </tr>
+                @for (item of grupo.items; track item.materia.id) {
+                  <tr class="border-b border-border hover:bg-muted">
+                    <td class="whitespace-nowrap px-4 py-2 font-medium text-primary-dark">
+                      {{ item.materia.codigo }}
+                    </td>
+                    <td class="px-4 py-2 text-primary-dark">{{ item.materia.nombre }}</td>
+                    <td class="px-4 py-2 text-text-secondary">
+                      @if (item.nivel !== null) {
+                        {{ item.nivel }}
+                      } @else {
+                        <span aria-hidden="true">—</span><span class="sr-only">No aplica</span>
+                      }
+                    </td>
+                    <td class="px-4 py-2 text-text-secondary">
+                      @if (item.horasSemanales !== null) {
+                        {{ item.horasSemanales }}
+                      } @else {
+                        <span aria-hidden="true">—</span><span class="sr-only">No aplica</span>
+                      }
+                    </td>
+                    <td class="whitespace-nowrap px-4 py-2">
+                      @if (item.origen === 'COMPARTIDA') {
+                        <app-indicador-materia-compartida
+                          [materia]="item.materia"
+                          [carreraActualId]="carreraId()"
+                          [carrerasQueLaUsan]="item.carrerasQueLaUsan"
+                        />
+                      } @else {
+                        <span class="text-text-secondary">Tu carrera</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            }
+          </table>
+        </div>
+      }
+    }
+  }
+</section>

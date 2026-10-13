@@ -1,0 +1,45 @@
+<section [attr.aria-labelledby]="idTitulo">
+  <h3 [id]="idTitulo" class="text-sm font-medium text-primary-dark">Materias habilitadas</h3>
+
+  <div class="mt-2">
+    <!-- Selector de materia (C1-31): se vacía solo después de cada materia agregada -->
+    <app-selector-materia (materiaChange)="agregar($event)" />
+  </div>
+
+  @if (aviso()) {
+    <p role="status" class="m-0 mt-2 text-sm text-text-secondary">{{ aviso() }}</p>
+  }
+
+  @if (error()) {
+    <p role="alert" class="m-0 mt-3 text-sm text-accent">
+      No se pudieron cargar las materias del docente.
+    </p>
+  } @else if (cargando()) {
+    <p class="m-0 mt-3 text-sm text-text-secondary">Cargando materias...</p>
+  } @else if (materias().length === 0) {
+    <p class="m-0 mt-3 text-sm text-text-secondary">
+      Este docente todavía no tiene materias habilitadas.
+    </p>
+  } @else {
+    <ul
+      class="m-0 mt-3 list-none divide-y divide-border rounded-md border border-border bg-surface p-0"
+    >
+      @for (m of materias(); track m.id) {
+        <li class="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+          <span class="text-primary-dark">
+            <span class="font-medium">{{ m.codigo }}</span> · {{ m.nombre }}
+            <span class="block text-xs text-text-secondary">{{ m.carreraResponsable }}</span>
+          </span>
+          <button
+            type="button"
+            class="shrink-0 text-sm font-medium text-primary hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            [attr.aria-label]="'Quitar ' + m.codigo"
+            (click)="quitar(m)"
+          >
+            Quitar
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</section>

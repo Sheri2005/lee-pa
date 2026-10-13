@@ -1,0 +1,206 @@
+@let curso = cursoPlanificado();
+@let estado = vista();
+
+<!-- Colores: tokens de src/styles.css (ver TAILWIND-Y-COLORES.md) -->
+<section
+  class="space-y-4 rounded-xl border border-border bg-surface p-4"
+  [attr.aria-label]="'Paralelos de ' + curso.materia.nombre"
+  [attr.aria-busy]="estado.tipo === 'cargando'"
+>
+  <header class="flex flex-wrap items-start justify-between gap-3">
+    <div class="min-w-0">
+      <h2 class="text-lg font-semibold text-primary-dark">Paralelos</h2>
+      <p class="text-sm text-text-secondary">
+        <span class="font-mono">{{ curso.materia.codigo }}</span>
+        · {{ curso.materia.nombre }}
+        @if (curso.nivel !== null) {
+          · Nivel {{ curso.nivel }}
+        }
+      </p>
+      <!-- Las horas semanales salen de la malla y no se editan por paralelo (HU G2-07) -->
+      <p class="mt-1 text-xs text-text-secondary">
+        {{ curso.horasSemanales }} h/sem según la malla · {{ curso.estudiantesEstimados }}
+        estudiantes estimados · cupo máximo {{ curso.cupoMaximo }}
+      </p>
+    </div>
+
+    @if (puedeAgregar()) {
+      <button
+        type="button"
+        class="shrink-0 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+        [disabled]="guardando() !== null"
+        (click)="agregar()"
+      >
+        + Agregar paralelo
+      </button>
+    }
+  </header>
+
+  @if (esCompartida()) {
+    <!-- HU G2-08: no se aperturan materias de otra carrera responsable -->
+    <p
+      role="note"
+      class="rounded-lg border border-accent-gold/40 bg-accent-gold/10 px-4 py-3 text-sm text-primary-dark"
+    >
+      <strong>Materia compartida.</strong> Los paralelos los apertura la carrera responsable. Aquí
+      solo se consultan y, si hacen falta cupos, se solicitan desde
+      <em>Materias compartidas</em>.
+    </p>
+  }
+
+  @if (!editable() && !esCompartida()) {
+    <p role="note" class="rounded-lg border border-border bg-muted px-4 py-3 text-sm text-text-secondary">
+      La planificación ya no está en borrador: los paralelos se muestran en solo lectura.
+    </p>
+  }
+
+  @if (errorAccion(); as mensaje) {
+    <p role="alert" class="rounded-lg border border-accent/40 bg-muted px-4 py-3 text-sm text-primary-dark">
+      {{ mensaje }}
+    </p>
+  }
+
+  @switch (estado.tipo) {
+    @case ('cargando') {
+      <app-spinner-carga tipo="esqueleto" [filas]="3" mensaje="Cargando paralelos…" />
+    }
+    @case ('error') {
+      <div class="space-y-3 rounded-lg border border-border bg-muted p-4">
+        <p role="alert" class="text-sm text-primary-dark">
+          No se pudieron cargar los paralelos de este curso. Intenta nuevamente.
+        </p>
+        <button
+          type="button"
+          class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          (click)="reintentar()"
+        >
+          Reintentar
+        </button>
+      </div>
+    }
+    @case ('listo') {
+      @if (paralelos().length === 0) {
+        <app-estado-vacio
+          icono="🗂️"
+          [mensaje]="
+            esCompartida()
+              ? 'La carrera responsable todavía no abrió paralelos de esta materia.'
+              : 'Este curso todavía no tiene paralelos. Agrega el primero (A).'
+          "
+        />
+      } @else {
+        <!-- Resumen: cupo ofertado y comparación con la sugerencia de las reglas -->
+        <div class="flex flex-wrap gap-2 text-sm">
+          <p role="status" class="rounded-md bg-muted px-3 py-1 font-medium text-brand">
+            {{ paralelos().length }} paralelo(s) · {{ cupoTotal() }} cupos en total
+          </p>
+          @if (diferenciaSugerida() !== 0) {
+            <p class="rounded-md bg-header px-3 py-1 text-text-secondary">
+              Las reglas sugirieron {{ curso.paralelosSugeridos }}
+            </p>
+          }
+          @if (cuposFaltantes() > 0) {
+            <p class="rounded-md border border-accent-gold/40 bg-accent-gold/10 px-3 py-1 text-primary-dark">
+              Faltan {{ cuposFaltantes() }} cupos para los estudiantes estimados
+            </p>
+          }
+        </div>
+
+        <ul class="grid gap-3 md:grid-cols-2">
+          @for (p of paralelos(); track p.id) {
+            <li class="space-y-3 rounded-xl border border-border bg-background p-3">
+              <!-- C2-12: la tarjeta es la vista oficial del paralelo -->
+              <app-tarjeta-paralelo [paralelo]="p" />
+
+              @if (editable() && !esCompartida()) {
+                <div class="grid gap-3 sm:grid-cols-2">
+                  <!-- Cupo -->
+                  <div>
+                    <label
+                      class="block text-xs font-medium text-primary-dark"
+                      [attr.for]="'cupo-' + p.id"
+                    >
+                      Cupo
+                    </label>
+                    <input
+                      type="number"
+                      [id]="'cupo-' + p.id"
+                      class="mt-1 w-full rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-primary-dark focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
+                      [value]="p.cupo"
+                      [min]="cupoMinimo"
+                      [max]="cupoMaximo"
+                      step="1"
+                      inputmode="numeric"
+                      [disabled]="controlesBloqueados()"
+                      (change)="cambiarCupo(p, $any($event.target).value)"
+                    />
+                  </div>
+
+                  <!-- EDITAR (C3-10): reemplazar por app-selector-tipo-espacio cuando G3 lo publique -->
+                  <div>
+                    <label
+                      class="block text-xs font-medium text-primary-dark"
+                      [attr.for]="'espacio-' + p.id"
+                    >
+                      Tipo de espacio
+                    </label>
+                    <select
+                      [id]="'espacio-' + p.id"
+                      class="mt-1 w-full rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-primary-dark focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
+                      [disabled]="controlesBloqueados()"
+                      (change)="cambiarTipoEspacio(p, $any($event.target).value)"
+                    >
+                      @for (tipo of tiposEspacio; track tipo) {
+                        <option [value]="tipo" [selected]="tipo === p.tipoEspacioRequerido">
+                          {{ etiquetasEspacio[tipo] }}
+                        </option>
+                      }
+                    </select>
+                  </div>
+                </div>
+
+                <!-- EDITAR (C3-11): reemplazar por app-selector-recursos cuando G3 lo publique -->
+                <details class="rounded-md border border-border bg-surface px-3 py-2">
+                  <summary class="cursor-pointer text-xs font-medium text-primary-dark">
+                    Recursos requeridos:
+                    <span class="font-normal text-text-secondary">{{ nombresRecursos(p) }}</span>
+                  </summary>
+                  <fieldset class="mt-2 space-y-1.5" [disabled]="controlesBloqueados()">
+                    <legend class="sr-only">Recursos del paralelo {{ p.codigo }}</legend>
+                    @for (recurso of recursosDisponibles; track recurso.id) {
+                      <label class="flex items-center gap-2 text-xs text-primary-dark">
+                        <input
+                          type="checkbox"
+                          class="size-4 rounded border-border accent-primary"
+                          [checked]="tieneRecurso(p, recurso)"
+                          (change)="alternarRecurso(p, recurso, $any($event.target).checked)"
+                        />
+                        {{ recurso.nombre }}
+                      </label>
+                    }
+                  </fieldset>
+                </details>
+
+                <div class="flex justify-end">
+                  <button
+                    type="button"
+                    class="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-primary hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+                    [disabled]="controlesBloqueados()"
+                    (click)="eliminar(p)"
+                  >
+                    Eliminar paralelo {{ p.codigo }}
+                  </button>
+                </div>
+              } @else {
+                <!-- Solo lectura: se muestran los datos sin controles -->
+                <p class="text-xs text-text-secondary">
+                  Recursos requeridos: {{ nombresRecursos(p) }}
+                </p>
+              }
+            </li>
+          }
+        </ul>
+      }
+    }
+  }
+</section>

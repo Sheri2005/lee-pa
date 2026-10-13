@@ -1,0 +1,159 @@
+<app-barra-filtros
+  titulo="Buscar espacios disponibles"
+  [filtrosActivos]="filtrosActivos()"
+  [accionesAbajo]="true"
+  (buscar)="enviar()"
+  (limpiar)="limpiar()"
+>
+  <div class="col-span-full">
+    <app-selector-rango-horario
+      etiqueta="Fecha y horario"
+      [enmarcado]="false"
+      [soloDiasHabiles]="true"
+      [fechaMin]="fechaMin()"
+      [horaMin]="horaMin()"
+      [horaMax]="horaMax()"
+      [(fecha)]="fecha"
+      [(inicio)]="inicio"
+      [(fin)]="fin"
+    />
+    @if (intentado() && rangoVacio()) {
+      <p
+        class="mt-3 flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700 transition duration-200 starting:-translate-y-1 starting:opacity-0"
+        role="alert"
+      >
+        <svg
+          class="size-4 shrink-0"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 7.5v5M12 16h.01" />
+        </svg>
+        Elige la fecha y el horario para buscar.
+      </p>
+    }
+  </div>
+
+  <div class="col-span-full grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <!-- TEMPORAL: reemplazar por <app-selector-tipo-espacio> (C3-10, G3) -->
+    <div class="flex min-w-0 flex-col gap-1.5">
+      <label class="text-sm font-medium text-primary-dark" [for]="id + '-tipo'"
+        >Tipo de espacio</label
+      >
+      <app-campo-seleccion
+        nombre="tipo"
+        vacio="Todos"
+        [idCampo]="id + '-tipo'"
+        [opciones]="tiposEspacio()"
+        [(valor)]="tipo"
+      />
+    </div>
+
+    <!-- TEMPORAL: reemplazar por <app-selector-edificio> (C3-07, G3) -->
+    <div class="flex min-w-0 flex-col gap-1.5">
+      <label class="text-sm font-medium text-primary-dark" [for]="id + '-edificio'">Edificio</label>
+      <app-campo-seleccion
+        nombre="edificio"
+        vacio="Todos"
+        [idCampo]="id + '-edificio'"
+        [opciones]="edificios()"
+        [(valor)]="edificio"
+      />
+    </div>
+
+    <div class="flex min-w-0 flex-col gap-1.5">
+      <label class="text-sm font-medium text-primary-dark" [for]="id + '-capacidad'">
+        Capacidad mínima
+      </label>
+      <div
+        class="flex min-h-11 items-center rounded-lg border bg-surface shadow-xs transition-[border-color,box-shadow] duration-200 focus-within:ring-4 hover:border-primary/40"
+        [class]="
+          intentado() && errorCapacidad()
+            ? 'border-red-700 focus-within:ring-red-700/10'
+            : capacidad()
+              ? 'border-primary/50 focus-within:border-primary focus-within:ring-primary/10'
+              : 'border-border focus-within:border-primary focus-within:ring-primary/10'
+        "
+      >
+        <button
+          type="button"
+          class="grid size-10 shrink-0 place-items-center rounded-l-lg text-primary transition-colors hover:bg-muted disabled:opacity-30"
+          aria-label="Restar 5 asistentes"
+          [disabled]="!capacidad()"
+          (click)="sumarCapacidad(-5)"
+        >
+          <svg
+            class="size-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="M5 12h14" />
+          </svg>
+        </button>
+        <input
+          type="text"
+          name="capacidad"
+          inputmode="numeric"
+          autocomplete="off"
+          maxlength="3"
+          [placeholder]="'Asistentes · máx. ' + CAPACIDAD_MAXIMA"
+          [id]="id + '-capacidad'"
+          class="w-full min-w-0 bg-transparent text-center text-primary-dark tabular-nums placeholder:text-text-secondary/50 focus:outline-none"
+          [value]="capacidad()"
+          [attr.aria-invalid]="intentado() && !!errorCapacidad()"
+          [attr.aria-describedby]="intentado() && errorCapacidad() ? id + '-error-capacidad' : null"
+          (input)="capacidad.set(valor($event))"
+          (change)="ajustarCapacidad($event)"
+        />
+        <button
+          type="button"
+          class="grid size-10 shrink-0 place-items-center rounded-r-lg text-primary transition-colors hover:bg-muted disabled:opacity-30"
+          aria-label="Sumar 5 asistentes"
+          [disabled]="numeroCapacidad() >= CAPACIDAD_MAXIMA"
+          (click)="sumarCapacidad(5)"
+        >
+          <svg
+            class="size-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </button>
+      </div>
+      @if (intentado() && errorCapacidad()) {
+        <span [id]="id + '-error-capacidad'" class="text-sm font-medium text-red-700">
+          {{ errorCapacidad() }}
+        </span>
+      }
+    </div>
+
+    <!-- TEMPORAL: reemplazar por <app-selector-recursos> (C3-11, G3) -->
+    <div class="flex min-w-0 flex-col gap-1.5">
+      <label class="text-sm font-medium text-primary-dark" [for]="id + '-recursos'">
+        Recursos del espacio
+      </label>
+      <app-campo-multiseleccion
+        nombre="recursos"
+        vacio="Cualquiera"
+        [idCampo]="id + '-recursos'"
+        [opciones]="recursos()"
+        [(valores)]="recursosElegidos"
+      />
+    </div>
+  </div>
+</app-barra-filtros>

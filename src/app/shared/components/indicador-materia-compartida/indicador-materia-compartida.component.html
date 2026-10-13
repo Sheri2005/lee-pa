@@ -1,0 +1,29 @@
+   @if (carrerasQueLaUsan().length) {
+      <span class="group relative inline-block">
+        <button type="button" [class]="clasePildora" [attr.aria-describedby]="idTooltip">
+          <ng-container [ngTemplateOutlet]="etiqueta" />
+        </button>
+        <div
+          role="tooltip"
+          [id]="idTooltip"
+          class="invisible absolute left-0 top-full z-10 mt-1.5 min-w-[14rem] rounded-lg border border-border bg-surface p-3 text-sm text-primary-dark opacity-0 shadow-lg
+                 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
+        >
+          <p class="m-0 mb-1 font-medium">Carreras que la tienen en su malla</p>
+          <ul class="m-0 list-disc pl-5 text-text-secondary">
+            @for (carrera of carrerasQueLaUsan(); track carrera) {
+              <li>{{ carrera }}</li>
+            }
+          </ul>
+        </div>
+      </span>
+    } @else {
+      <span [class]="clasePildora">
+        <ng-container [ngTemplateOutlet]="etiqueta" />
+      </span>
+    }
+
+    <ng-template #etiqueta>
+      <span>Compartida</span>
+      <span class="font-normal text-text-secondary">· {{ textoResponsable() }}</span>
+    </ng-template>
